@@ -4,7 +4,7 @@
 >
 > **v3.0 新增：即時真實數據（FinMind API）+ 互動圖表（Chart.js）**
 
-🔗 **線上 Demo**：<https://jeremy0819.github.io/-/>
+🔗 **線上 Demo**：<https://jeremy0819.github.io/Financial-Dashboard/>
 
 ---
 
