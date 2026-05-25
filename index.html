@@ -348,25 +348,30 @@ function fmtBig(v,unit){ // 數字 → 億 (TWD) 或 億美元
   const x=v/1e8;
   return x.toLocaleString('en-US',{maximumFractionDigits:0})+(unit||'億');
 }
-// 把日收盤聚合成「每月最後收盤」，回傳 {labels, price}
-function monthlyClose(prices,closeKey){
-  const byMonth={};
-  prices.forEach(p=>{ const m=p.date.slice(0,7); byMonth[m]=Number(p[closeKey]); });
-  const months=Object.keys(byMonth).sort();
-  const last12=months.slice(-12);
-  return { labels:last12, price:last12.map(m=>byMonth[m]) };
+// 簡單移動平均：回傳與 arr 等長陣列，前 p-1 筆為 null
+function sma(arr,p){
+  return arr.map((_,i)=>{ if(i<p-1) return null; let s=0; for(let k=i-p+1;k<=i;k++) s+=arr[k]; return +(s/p).toFixed(2); });
+}
+// 日收盤 + 5條技術均線（5/10/月20/季60/半年120），只顯示最近約120個交易日
+function buildTech(prices,closeKey){
+  const sorted=prices.slice().sort((a,b)=>a.date<b.date?-1:1);
+  const dates=sorted.map(p=>p.date);
+  const close=sorted.map(p=>Number(p[closeKey]));
+  const ma={5:sma(close,5),10:sma(close,10),20:sma(close,20),60:sma(close,60),120:sma(close,120)};
+  const N=Math.min(120,close.length), s=close.length-N, sl=a=>a.slice(s);
+  return { labels:dates.slice(s), close:sl(close), ma5:sl(ma[5]), ma10:sl(ma[10]), ma20:sl(ma[20]), ma60:sl(ma[60]), ma120:sl(ma[120]) };
 }
 
 async function fetchReal(ticker){
   const isTW=/\.TWO?$/.test(ticker);
-  const real={ isTW, market:isTW?'台股':'美股', priceSeries:null, revSeries:null,
+  const real={ isTW, market:isTW?'台股':'美股', revSeries:null,
     price:null, priceStr:null, per:null, pbr:null, divYield:null,
-    grossM:null, opM:null, netM:null, eps:null, revYoY:null, chart:null };
+    grossM:null, opM:null, netM:null, eps:null, revYoY:null, tech:null };
 
   if(isTW){
     const id=ticker.replace(/\.TWO?$/,'');
     const [px,per,rev,fin]=await Promise.all([
-      fmGet('TaiwanStockPrice',id,daysAgo(400)),
+      fmGet('TaiwanStockPrice',id,daysAgo(500)),
       fmGet('TaiwanStockPER',id,daysAgo(10)),
       fmGet('TaiwanStockMonthRevenue',id,daysAgo(420)),
       fmGet('TaiwanStockFinancialStatements',id,daysAgo(420))
@@ -396,28 +401,19 @@ async function fetchReal(ticker){
       }
       if(q&&q.EPS!=null) real.eps=q.EPS;
     }
-    // 組合圖：每月股價 + 月營收
-    const mc=monthlyClose(px,'close');
-    real.chart={ labels:mc.labels, price:mc.price, priceLabel:'股價 (NT$)',
-      bars:real.revSeries?alignTo(mc.labels,real.revSeries):null, barLabel:'月營收 (億)' };
+    // 技術均線圖（日收盤）
+    real.tech=px.length?buildTech(px,'close'):null;
   } else {
-    const px=await fmGet('USStockPrice',ticker,daysAgo(400));
+    const px=await fmGet('USStockPrice',ticker,daysAgo(500));
     if(px.length){ const last=px[px.length-1]; real.price=Number(last.Close); real.priceStr='$'+real.price.toLocaleString(); }
-    const mc=monthlyClose(px,'Close');
-    real.chart={ labels:mc.labels, price:mc.price, priceLabel:'股價 (US$)', bars:null, barLabel:'' };
+    real.tech=px.length?buildTech(px,'Close'):null;
   }
   // 沒抓到任何價格 → 視為失敗
   if(real.price==null) return null;
   return real;
 }
-// 把營收 series 對齊到圖表的月份標籤
-function alignTo(labels,series){
-  const map={}; series.labels.forEach((l,i)=>map[l]=series.values[i]);
-  return labels.map(l=>map[l]!=null?map[l]:null);
-}
-
 // ─── TAB STATE ───────────────────────────────────────────
-let curTab=0, curData=null, priceChart=null;
+let curTab=0, curData=null, techChart=null, revChart=null;
 const TABS=[
   {icon:'🏥',label:'財務健檢'},
   {icon:'📊',label:'估值分析'},
@@ -460,7 +456,8 @@ function tabHealth(d){
       ${card(`<p class="text-xs text-slate-400">毛利率(最新季)</p><p class="text-lg font-bold text-slate-800">${r.grossM!=null?r.grossM.toFixed(1)+'%':'—'}</p>`)}
       ${card(`<p class="text-xs text-slate-400">EPS(最新季)</p><p class="text-lg font-bold text-slate-800">${r.eps!=null?r.eps:'—'}</p>`)}
     </div>` : `<div class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2.5">⚠️ 即時數據抓取失敗（網路/代號/API限流），以下為資料庫質化分析。</div>`;
-  const chartCard = (r&&r.chart) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 近12個月股價${r.chart.bars?' × 月營收':''}（即時）</p><div style="height:240px"><canvas id="cvChart"></canvas></div>`) : '';
+  const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5日/10日/月線/季線/半年線，即時）</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
+  const revCard = (r&&r.revSeries) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">🏭 近12月營收（億，即時）</p><div style="position:relative;height:170px;width:100%"><canvas id="cvRev"></canvas></div>`) : '';
   return `<div class="max-w-3xl space-y-3">
     <div class="flex items-center gap-2 flex-wrap mb-1">
       <span class="text-sm font-bold text-slate-700">財務健康度分析</span>
@@ -469,6 +466,7 @@ function tabHealth(d){
     </div>
     ${realStrip}
     ${chartCard}
+    ${revCard}
     ${card(`
       <div class="flex justify-between items-center mb-2">
         <span class="text-xs text-slate-500">整體財務評分</span>
@@ -575,28 +573,41 @@ function tabDecision(d){
   </div>`;
 }
 
-function drawChart(ch){
-  const el=document.getElementById('cvChart');
-  if(!el) return;
-  if(priceChart) priceChart.destroy();
-  const ds=[{label:ch.priceLabel,data:ch.price,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',yAxisID:'y',tension:.3,fill:true,pointRadius:0,borderWidth:2}];
-  const scales={ y:{position:'left',title:{display:true,text:ch.priceLabel}} };
-  if(ch.bars){
-    ds.push({type:'bar',label:ch.barLabel,data:ch.bars,backgroundColor:'rgba(239,68,68,.45)',yAxisID:'y1'});
-    scales.y1={position:'right',title:{display:true,text:ch.barLabel},grid:{drawOnChartArea:false}};
-  }
-  priceChart=new Chart(el.getContext('2d'),{
+// 技術均線設定：收盤 + 5/10/月線(20)/季線(60)/半年線(120)
+const MA_CFG=[
+  {k:'close',label:'收盤',color:'#334155',w:1.8},
+  {k:'ma5',label:'5日',color:'#ef4444',w:1},
+  {k:'ma10',label:'10日',color:'#f59e0b',w:1},
+  {k:'ma20',label:'月線(20)',color:'#10b981',w:1.1},
+  {k:'ma60',label:'季線(60)',color:'#3b82f6',w:1.3},
+  {k:'ma120',label:'半年線(120)',color:'#8b5cf6',w:1.3}
+];
+function drawTech(t){
+  const el=document.getElementById('cvTech'); if(!el) return;
+  if(techChart) techChart.destroy();
+  techChart=new Chart(el.getContext('2d'),{
     type:'line',
-    data:{labels:ch.labels,datasets:ds},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},scales}
+    data:{labels:t.labels,datasets:MA_CFG.map(m=>({label:m.label,data:t[m.k],borderColor:m.color,borderWidth:m.w,pointRadius:0,tension:.15,spanGaps:true}))},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{boxWidth:10,font:{size:10}},position:'top'}},
+      scales:{ x:{ticks:{maxTicksLimit:8,autoSkip:true,font:{size:9}}}, y:{position:'right'} }}
+  });
+}
+function drawRev(rev){
+  const el=document.getElementById('cvRev'); if(!el) return;
+  if(revChart) revChart.destroy();
+  revChart=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels:rev.labels,datasets:[{label:'月營收 (億)',data:rev.values,backgroundColor:'rgba(59,130,246,.5)'}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{font:{size:9}}}, y:{position:'right'} }}
   });
 }
 
 function renderTabContent(d,i){
   const fns=[tabHealth,tabValuation,tabGrowth,tabDebate,tabDecision];
   document.getElementById('tabContent').innerHTML=fns[i](d);
-  if(i===0 && d.real && d.real.chart) drawChart(d.real.chart);
+  if(i===0 && d.real){ if(d.real.tech) drawTech(d.real.tech); if(d.real.revSeries) drawRev(d.real.revSeries); }
 }
 
 function renderResults(ticker,d){
