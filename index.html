@@ -16,10 +16,10 @@
 <body class="flex h-screen overflow-hidden bg-slate-100 text-slate-800">
 
 <!-- SIDEBAR -->
-<aside class="w-52 bg-slate-900 flex flex-col shrink-0">
+<aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 真實數據 v3.0</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v4.0</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
     <div class="bg-slate-800 rounded-lg p-3 border border-slate-700">
@@ -54,17 +54,21 @@
     </div>
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
-    <p>數據來源：FinMind 即時 API</p>
+    <p>數據來源：FinMind（日收盤）</p>
     <p>Architecture meets Finance</p>
   </div>
 </aside>
+<div id="backdrop" class="hidden md:hidden fixed inset-0 bg-black/40 z-30" onclick="toggleSidebar(false)"></div>
 
 <!-- MAIN -->
 <main class="flex-1 flex flex-col overflow-hidden relative">
 
-  <header class="bg-white border-b border-slate-200 px-6 py-3 shrink-0">
-    <p id="hTitle" class="text-base font-bold text-slate-800">🏗️ AI 股票財務健檢系統 v3.0</p>
-    <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取即時財報 + 五層次深度分析</p>
+  <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
+    <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
+    <div class="min-w-0">
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v4.0</p>
+      <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 五層次深度分析</p>
+    </div>
   </header>
 
   <!-- Loading Terminal -->
@@ -96,6 +100,8 @@
 
   <!-- Results -->
   <div id="results" class="hidden flex-1 flex flex-col overflow-hidden">
+    <div id="freshBar" class="bg-slate-50 border-b border-slate-200 px-5 py-1.5 flex items-center gap-2 text-xs text-slate-500 shrink-0 flex-wrap"></div>
+    <div id="glanceBar" class="grid grid-cols-3 sm:grid-cols-6 gap-px bg-slate-200 border-b border-slate-200 shrink-0"></div>
     <div id="tabBar" class="bg-white border-b border-slate-200 px-4 flex gap-0.5 shrink-0 overflow-x-auto ns"></div>
     <div id="tabContent" class="flex-1 overflow-y-auto p-5 ns"></div>
   </div>
@@ -361,55 +367,90 @@ function buildTech(prices,closeKey){
   const N=Math.min(120,close.length), s=close.length-N, sl=a=>a.slice(s);
   return { labels:dates.slice(s), close:sl(close), ma5:sl(ma[5]), ma10:sl(ma[10]), ma20:sl(ma[20]), ma60:sl(ma[60]), ma120:sl(ma[120]) };
 }
+// 由真實數據產生「即時數據訊號」（技術面/估值/營收/毛利），tone: good/warn/bad
+function buildSignals(real){
+  const s={}; const t=real.tech;
+  if(t&&t.close.length){
+    const n=t.close.length, last=t.close[n-1], lv=a=>a[n-1];
+    const m5=lv(t.ma5),m20=lv(t.ma20),m60=lv(t.ma60),m120=lv(t.ma120);
+    const bull=last>m5&&m5>m20&&m20>m60&&m60>m120, bear=last<m5&&m5<m20&&m20<m60&&m60<m120;
+    s.tech={label:bull?'均線多頭排列':bear?'均線空頭排列':'區間盤整',tone:bull?'good':bear?'bad':'warn',
+      note:(m60!=null?((last>=m60?'站上':'跌破')+'季線 '+m60.toFixed(0)):'資料不足')};
+  }
+  if(real.perPctile!=null&&real.per!=null){
+    const p=real.perPctile;
+    s.val={label:p<=30?'本益比相對偏低':p>=70?'本益比相對偏高':'本益比區間中段',tone:p<=30?'good':p>=70?'bad':'warn',
+      note:'P/E '+real.per+'x ｜ 近一年第 '+Math.round(p)+' 百分位'};
+  }
+  if(real.revYoY!=null){
+    s.rev={label:real.revYoY>=10?'營收動能強勁':real.revYoY>=0?'營收大致持平':'營收年減',tone:real.revYoY>=10?'good':real.revYoY>=0?'warn':'bad',
+      note:'最新月營收年增 '+real.revYoY.toFixed(1)+'%'};
+  }
+  if(real.grossM!=null&&real.grossMPrev!=null){
+    const d=real.grossM-real.grossMPrev;
+    s.margin={label:d>=0.5?'毛利率改善':d<=-0.5?'毛利率下滑':'毛利率持平',tone:d>=0.5?'good':d<=-0.5?'bad':'warn',
+      note:'毛利率 '+real.grossM.toFixed(1)+'%（季變動 '+(d>=0?'+':'')+d.toFixed(1)+'pt）'};
+  }
+  return s;
+}
 
 async function fetchReal(ticker){
   const isTW=/\.TWO?$/.test(ticker);
   const real={ isTW, market:isTW?'台股':'美股', revSeries:null,
     price:null, priceStr:null, per:null, pbr:null, divYield:null,
-    grossM:null, opM:null, netM:null, eps:null, revYoY:null, tech:null };
+    grossM:null, grossMPrev:null, opM:null, netM:null, eps:null, revYoY:null, tech:null,
+    asOf:null, priceDate:null, change:null, changePct:null, perPctile:null, perDate:null, revDate:null, finDate:null, signals:{} };
 
   if(isTW){
     const id=ticker.replace(/\.TWO?$/,'');
     const [px,per,rev,fin]=await Promise.all([
       fmGet('TaiwanStockPrice',id,daysAgo(500)),
-      fmGet('TaiwanStockPER',id,daysAgo(10)),
+      fmGet('TaiwanStockPER',id,daysAgo(400)),
       fmGet('TaiwanStockMonthRevenue',id,daysAgo(420)),
       fmGet('TaiwanStockFinancialStatements',id,daysAgo(420))
     ]);
-    if(px.length){ const last=px[px.length-1]; real.price=Number(last.close); real.priceStr='NT$'+real.price.toLocaleString(); }
-    if(per.length){ const last=per[per.length-1]; real.per=last.PER; real.pbr=last.PBR; real.divYield=last.dividend_yield; }
+    const pxs=px.slice().sort((a,b)=>a.date<b.date?-1:1);
+    if(pxs.length){ const n=pxs.length,last=pxs[n-1]; real.price=Number(last.close); real.priceStr='NT$'+real.price.toLocaleString(); real.priceDate=last.date; real.asOf=last.date;
+      if(n>1){ const prev=Number(pxs[n-2].close); real.change=real.price-prev; real.changePct=prev?real.change/prev*100:null; } }
+    if(per.length){ const last=per[per.length-1]; const rnd=v=>v!=null?+Number(v).toFixed(2):null;
+      real.per=rnd(last.PER); real.pbr=rnd(last.PBR); real.divYield=rnd(last.dividend_yield); real.perDate=last.date;
+      const arr=per.map(x=>x.PER).filter(v=>v!=null&&v>0); if(arr.length>20){ real.perPctile=arr.filter(v=>v<real.per).length/arr.length*100; } }
     // 月營收趨勢 + 年增率
     if(rev.length){
       const sorted=rev.slice().sort((a,b)=>a.date<b.date?-1:1);
       const last12=sorted.slice(-12);
       real.revSeries={ labels:last12.map(r=>`${r.revenue_year}-${pad(r.revenue_month)}`), values:last12.map(r=>Number(r.revenue)/1e8) };
-      const newest=sorted[sorted.length-1];
+      const newest=sorted[sorted.length-1]; real.revDate=`${newest.revenue_year}-${pad(newest.revenue_month)}`;
       const yearAgo=sorted.find(r=>r.revenue_year===newest.revenue_year-1 && r.revenue_month===newest.revenue_month);
       if(yearAgo) real.revYoY=((newest.revenue-yearAgo.revenue)/yearAgo.revenue*100);
     }
-    // 最新一期財報利潤率 + EPS
+    // 最新與前一期財報利潤率 + EPS
     if(fin.length){
       const byDate={};
       fin.forEach(r=>{ (byDate[r.date]=byDate[r.date]||{})[r.type]=Number(r.value); });
       const dates=Object.keys(byDate).sort();
-      const q=byDate[dates[dates.length-1]];
+      const gm=q=>(q&&q.Revenue&&q.GrossProfit!=null)?q.GrossProfit/q.Revenue*100:null;
+      const q=byDate[dates[dates.length-1]], qp=dates.length>1?byDate[dates[dates.length-2]]:null;
+      real.finDate=dates[dates.length-1];
       if(q&&q.Revenue){
-        if(q.GrossProfit!=null) real.grossM=q.GrossProfit/q.Revenue*100;
+        real.grossM=gm(q);
         if(q.OperatingIncome!=null) real.opM=q.OperatingIncome/q.Revenue*100;
         const net=q.IncomeAfterTaxes!=null?q.IncomeAfterTaxes:q.TotalConsolidatedProfitForThePeriod;
         if(net!=null) real.netM=net/q.Revenue*100;
       }
+      real.grossMPrev=gm(qp);
       if(q&&q.EPS!=null) real.eps=q.EPS;
     }
-    // 技術均線圖（日收盤）
-    real.tech=px.length?buildTech(px,'close'):null;
+    real.tech=pxs.length?buildTech(pxs,'close'):null;
   } else {
-    const px=await fmGet('USStockPrice',ticker,daysAgo(500));
-    if(px.length){ const last=px[px.length-1]; real.price=Number(last.Close); real.priceStr='$'+real.price.toLocaleString(); }
+    const px=(await fmGet('USStockPrice',ticker,daysAgo(500))).slice().sort((a,b)=>a.date<b.date?-1:1);
+    if(px.length){ const n=px.length,last=px[n-1]; real.price=Number(last.Close); real.priceStr='$'+real.price.toLocaleString(); real.priceDate=last.date; real.asOf=last.date;
+      if(n>1){ const prev=Number(px[n-2].Close); real.change=real.price-prev; real.changePct=prev?real.change/prev*100:null; } }
     real.tech=px.length?buildTech(px,'Close'):null;
   }
   // 沒抓到任何價格 → 視為失敗
   if(real.price==null) return null;
+  real.signals=buildSignals(real);
   return real;
 }
 // ─── TAB STATE ───────────────────────────────────────────
@@ -442,85 +483,91 @@ function metaRow(icon,label,val){
   return `<div class="flex gap-2.5 py-2 border-b border-slate-100 last:border-0"><span class="text-base mt-0.5">${icon}</span><div><p class="text-xs text-slate-400">${label}</p><p class="text-sm text-slate-800 font-medium">${val}</p></div></div>`;
 }
 function pct(v){ return v==null?'—':(v>=0?'+':'')+v.toFixed(1)+'%'; }
-function realBadge(){ return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500 text-white ml-1">即時</span>`; }
+function fmtDate(s){ return s?s.slice(5):''; }                       // YYYY-MM-DD → MM-DD
+function dataBadge(date){ return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 ml-1">日收盤${date?' '+fmtDate(date):''}</span>`; }
+function staticBadge(src){ const t=src==='ai'?'AI 觀點':'策展觀點 · 非即時'; return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-500 ml-1">${t}</span>`; }
+// 台股慣例 紅漲綠跌：正→紅(rose) 負→綠(emerald)
+function upCls(v){ return v==null?'text-slate-800':v>0?'text-rose-600':v<0?'text-emerald-600':'text-slate-500'; }
+function toneCls(t){ return t==='good'?'bg-emerald-50 border-emerald-200 text-emerald-700':t==='bad'?'bg-rose-50 border-rose-200 text-rose-700':'bg-amber-50 border-amber-200 text-amber-700'; }
+function signalPill(s){ return s?`<div class="rounded-lg border p-2.5 ${toneCls(s.tone)}"><p class="text-xs font-bold">${s.label}</p><p class="text-[11px] opacity-80 mt-0.5">${s.note}</p></div>`:''; }
+function toggleSidebar(show){
+  const sb=document.getElementById('sidebar'), bd=document.getElementById('backdrop');
+  const open = show===undefined ? sb.classList.contains('-translate-x-full') : show;
+  sb.classList.toggle('-translate-x-full',!open);
+  bd.classList.toggle('hidden',!open);
+}
 
 // ─── TAB CONTENTS ────────────────────────────────────────
 function tabHealth(d){
-  const sc=d.score||70, isS=d.trend==='S';
+  const sc=d.score||70;
   const barCol=sc>=70?'bg-emerald-500':sc>=50?'bg-amber-500':'bg-red-500';
   const scCol=sc>=70?'text-emerald-600':sc>=50?'text-amber-600':'text-red-600';
-  const r=d.real;
-  const realStrip = r ? `<div class="grid grid-cols-4 gap-2">
-      ${card(`<p class="text-xs text-slate-400">即時股價 ${r.market}</p><p class="text-lg font-bold text-slate-800">${r.priceStr}</p>`)}
-      ${card(`<p class="text-xs text-slate-400">月營收年增</p><p class="text-lg font-bold ${r.revYoY>=0?'text-emerald-600':'text-red-600'}">${pct(r.revYoY)}</p>`)}
-      ${card(`<p class="text-xs text-slate-400">毛利率(最新季)</p><p class="text-lg font-bold text-slate-800">${r.grossM!=null?r.grossM.toFixed(1)+'%':'—'}</p>`)}
-      ${card(`<p class="text-xs text-slate-400">EPS(最新季)</p><p class="text-lg font-bold text-slate-800">${r.eps!=null?r.eps:'—'}</p>`)}
-    </div>` : `<div class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2.5">⚠️ 即時數據抓取失敗（網路/代號/API限流），以下為資料庫質化分析。</div>`;
-  const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5日/10日/月線/季線/半年線，即時）</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
-  const revCard = (r&&r.revSeries) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">🏭 近12月營收（億，即時）</p><div style="position:relative;height:170px;width:100%"><canvas id="cvRev"></canvas></div>`) : '';
+  const r=d.real, sg=r?r.signals:null;
+  const noReal = r?'':`<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">⚠️ 即時數據抓取失敗（網路／代號／API 限流），以下為策展靜態觀點，數字可能過時。<button onclick="run()" class="ml-1 underline text-blue-600 font-bold">重試</button></div>`;
+  const sigCard = (sg&&(sg.tech||sg.val||sg.rev||sg.margin)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📡 即時數據訊號</span>${dataBadge(r.asOf)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${signalPill(sg.tech)}${signalPill(sg.val)}${signalPill(sg.rev)}${signalPill(sg.margin)}</div>`) : '';
+  const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5/10/月/季/半年線）${dataBadge(r.priceDate)}</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
+  const revCard = (r&&r.revSeries) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">🏭 近12月營收（億）${dataBadge(r.revDate)}</p><div style="position:relative;height:170px;width:100%"><canvas id="cvRev"></canvas></div>`) : '';
   return `<div class="max-w-3xl space-y-3">
-    <div class="flex items-center gap-2 flex-wrap mb-1">
-      <span class="text-sm font-bold text-slate-700">財務健康度分析</span>
-      ${badge(isS?'財務增強中 ▲':'財務轉弱中 ▼',isS?'success':'danger')}
-      ${r?realBadge():''}
-    </div>
-    ${realStrip}
+    ${noReal}
+    ${sigCard}
     ${chartCard}
     ${revCard}
+    <div class="flex items-center gap-2 flex-wrap pt-1">
+      <span class="text-sm font-bold text-slate-700">財務評分與摘要</span>${staticBadge(d._src)}
+    </div>
     ${card(`
       <div class="flex justify-between items-center mb-2">
         <span class="text-xs text-slate-500">整體財務評分</span>
-        <span class="text-xl font-bold ${scCol}">${sc} / 100</span>
+        <span class="text-xl font-bold ${scCol} tabular-nums">${sc} / 100</span>
       </div>
       <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-        <div class="${barCol} h-2.5 rounded-full" style="width:${sc}%;transition:width 1s ease"></div>
+        <div class="${barCol} h-2.5 rounded-full" style="width:${sc}%"></div>
       </div>
       <p class="text-xs text-slate-500 mt-3 bg-slate-50 rounded-lg p-2.5">${d.hsum}</p>
-    `)}
-    <div class="grid grid-cols-2 gap-2">
-      ${card(metaRow('📈','5年營收趨勢',d.rev)+metaRow('💰','淨利趨勢',d.ni))}
-      ${card(metaRow('💵','自由現金流',d.fcf)+metaRow('📉','利潤率趨勢',d.margin))}
+    `,'border-dashed')}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      ${card(metaRow('📈','5年營收趨勢',d.rev)+metaRow('💰','淨利趨勢',d.ni),'border-dashed')}
+      ${card(metaRow('💵','自由現金流',d.fcf)+metaRow('📉','利潤率趨勢',d.margin),'border-dashed')}
     </div>
-    ${card(metaRow('🏦','債務水平',d.debt))}
+    ${card(metaRow('🏦','債務水平',d.debt),'border-dashed')}
   </div>`;
 }
 
 function tabValuation(d){
-  const vc={'U':'success','O':'danger','F':'warning'};
   const r=d.real;
-  const peShow = r&&r.per!=null ? r.per+'x' : d.pe;
   const curShow = r&&r.priceStr ? r.priceStr : d.cur;
-  const extra = r ? `<div class="grid grid-cols-3 gap-2">
-      ${card(`<p class="text-xs text-slate-400 mb-1">本益比 P/E ${realBadge()}</p><p class="text-xl font-bold text-slate-800">${r.per!=null?r.per+'x':'—'}</p>`)}
-      ${card(`<p class="text-xs text-slate-400 mb-1">股價淨值比 P/B ${realBadge()}</p><p class="text-xl font-bold text-slate-800">${r.pbr!=null?r.pbr+'x':'—'}</p>`)}
-      ${card(`<p class="text-xs text-slate-400 mb-1">現金殖利率 ${realBadge()}</p><p class="text-xl font-bold text-emerald-600">${r.divYield!=null?r.divYield+'%':'—'}</p>`)}
-    </div>` : '';
-  return `<div class="max-w-2xl space-y-3">
-    <div class="flex items-center gap-2 flex-wrap mb-1">
-      <span class="text-sm font-bold text-slate-700">估值分析</span>
-      ${badge('評價：'+d.verdz,vc[d.verd]||'warning')}
+  const realBlock = r ? `<div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">即時估值指標</span>${dataBadge(r.perDate||r.asOf)}</div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      ${card(`<p class="text-xs text-slate-400 mb-1">本益比 P/E</p><p class="text-xl font-bold text-slate-800 tabular-nums">${r.per!=null?r.per+'x':'—'}</p>`)}
+      ${card(`<p class="text-xs text-slate-400 mb-1">股價淨值比 P/B</p><p class="text-xl font-bold text-slate-800 tabular-nums">${r.pbr!=null?r.pbr+'x':'—'}</p>`)}
+      ${card(`<p class="text-xs text-slate-400 mb-1">現金殖利率</p><p class="text-xl font-bold text-slate-800 tabular-nums">${r.divYield!=null?r.divYield+'%':'—'}</p>`)}
+      ${card(`<p class="text-xs text-slate-400 mb-1">P/E 一年百分位</p><p class="text-xl font-bold text-slate-800 tabular-nums">${r.perPctile!=null?Math.round(r.perPctile)+'%':'—'}</p>`)}
     </div>
-    ${extra}
-    <div class="grid grid-cols-3 gap-2">
-      ${card(`<p class="text-xs text-slate-400 mb-1">目前 P/E</p><p class="text-xl font-bold text-slate-800">${peShow}</p>`)}
-      ${card(`<p class="text-xs text-slate-400 mb-1">同業平均 P/E</p><p class="text-xl font-bold text-slate-800">${d.ipe}</p>`)}
-      ${card(`<p class="text-xs text-slate-400 mb-1">估值結論</p><p class="text-xl font-bold text-${d.verd==='U'?'emerald':d.verd==='O'?'red':'amber'}-600">${d.verdz}</p>`,'border-2 '+(d.verd==='U'?'border-emerald-300 bg-emerald-50':d.verd==='O'?'border-red-300 bg-red-50':'border-amber-300 bg-amber-50'))}
+    ${r.signals&&r.signals.val?signalPill(r.signals.val):''}` : '';
+  const gap = (r&&r.price!=null) ? `<p class="text-xs text-amber-700 bg-amber-50 rounded-lg p-2 mt-2">⚠️ 此 DCF／結論為靜態策展數據，與最新收盤 ${r.priceStr} 可能落差大，僅供質化參考。</p>` : '';
+  return `<div class="max-w-2xl space-y-3">
+    ${realBlock}
+    <div class="flex items-center gap-2 flex-wrap pt-1"><span class="text-sm font-bold text-slate-700">策展估值觀點</span>${staticBadge(d._src)}</div>
+    <div class="grid grid-cols-2 gap-2">
+      ${card(`<p class="text-xs text-slate-400 mb-1">同業平均 P/E</p><p class="text-lg font-bold text-slate-800">${d.ipe}</p>`,'border-dashed')}
+      ${card(`<p class="text-xs text-slate-400 mb-1">策展估值結論</p><p class="text-lg font-bold text-${d.verd==='U'?'emerald':d.verd==='O'?'rose':'amber'}-600">${d.verdz}</p>`,'border-dashed')}
     </div>
     ${card(`
       <p class="text-xs font-bold text-slate-600 mb-3">💡 DCF 折現現金流估值</p>
       <div class="flex items-center gap-6">
-        <div><p class="text-xs text-slate-400">DCF 合理價</p><p class="text-xl font-bold text-blue-600">${d.dcf}</p></div>
-        <span class="text-xl text-slate-300">vs</span>
-        <div><p class="text-xs text-slate-400">當前市價${r?realBadge():''}</p><p class="text-xl font-bold text-slate-800">${curShow}</p></div>
+        <div><p class="text-xs text-slate-400">DCF 合理價</p><p class="text-lg font-bold text-blue-600 tabular-nums">${d.dcf}</p></div>
+        <span class="text-lg text-slate-300">vs</span>
+        <div><p class="text-xs text-slate-400">最新收盤${r?dataBadge(r.priceDate):''}</p><p class="text-lg font-bold text-slate-800 tabular-nums">${curShow}</p></div>
       </div>
-      <p class="text-xs text-slate-500 mt-3 bg-slate-50 rounded-lg p-2.5">${d.vsum}</p>
-    `)}
+      ${gap}
+      <p class="text-xs text-slate-500 mt-2 bg-slate-50 rounded-lg p-2.5">${d.vsum}</p>
+    `,'border-dashed')}
   </div>`;
 }
 
 function tabGrowth(d){
   return `<div class="max-w-2xl space-y-3">
-    <span class="text-sm font-bold text-slate-700 block mb-1">成長潛力分析</span>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">成長潛力分析</span>${staticBadge(d._src)}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">🌍 目標市場規模</p><p class="text-base font-bold text-slate-800">${d.mkt}</p>`)}
       ${card(`<p class="text-xs text-slate-400 mb-1">📈 產業年增率</p><p class="text-base font-bold text-emerald-600">${d.rate}</p>`)}
@@ -540,7 +587,7 @@ function tabGrowth(d){
 function tabDebate(d){
   const pts=(arr,col)=>arr.map(p=>`<div class="flex gap-2 mb-2 text-xs"><span class="font-bold ${col} shrink-0">${col.includes('emerald')?'+':'−'}</span><span class="text-slate-700">${p}</span></div>`).join('');
   return `<div class="max-w-2xl space-y-3">
-    <span class="text-sm font-bold text-slate-700 block mb-1">多空分析師辯論</span>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">多空分析師辯論</span>${staticBadge(d._src)}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card('<p class="text-xs font-bold text-emerald-700 mb-3">🐂 多頭分析師</p>'+pts(d.bull,'text-emerald-600'))}
       ${card('<p class="text-xs font-bold text-red-700 mb-3">🐻 空頭分析師</p>'+pts(d.bear,'text-red-500'))}
@@ -554,7 +601,7 @@ function tabDecision(d){
   const c=cfg[d.act]||cfg.HOLD;
   const li=(arr,col)=>arr.map(x=>`<div class="flex gap-2 mb-1.5 text-xs"><span class="${col}">▶</span><span class="text-slate-700">${x}</span></div>`).join('');
   return `<div class="max-w-2xl space-y-3">
-    <span class="text-sm font-bold text-slate-700 block mb-1">投資決策</span>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">投資決策</span>${staticBadge(d._src)}</div>
     ${card(`<div class="flex flex-col items-center py-3">
       <div class="flex items-center gap-3 px-8 py-4 rounded-xl ${c.bg} border ${c.border}">
         <span class="text-3xl">${c.e}</span>
@@ -612,9 +659,33 @@ function renderTabContent(d,i){
 
 function renderResults(ticker,d){
   curData=d; curTab=0;
-  const srcTag = d._src==='ai'?'Claude AI':d._src==='db'?'資料庫':'自動生成';
+  const r=d.real;
+  const srcTag = d._src==='ai'?'Claude AI':d._src==='db'?'策展資料庫':'自動生成';
   document.getElementById('hTitle').textContent=`📋 ${d.co} (${ticker.toUpperCase()}) — 財務健檢報告`;
-  document.getElementById('hSub').textContent=`分析日期：${document.getElementById('cDate').textContent} ｜ 質化：${srcTag}${d.real?' ｜ 數字：FinMind 即時':''}`;
+  document.getElementById('hSub').textContent=`質化分析：${srcTag}${r?' ｜ 數字：FinMind 日收盤':''}`;
+
+  // 資料新鮮度橫幅
+  const fresh=document.getElementById('freshBar');
+  if(r){
+    const usLag = r.isTW?'':' · 美股約延遲 1 交易日';
+    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>資料截至 <b class="text-slate-700">${r.asOf||'—'}</b>（日收盤，非盤中即時${usLag}）</span><span class="ml-auto text-slate-400">來源：FinMind</span>`;
+  } else {
+    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span><span class="text-amber-600">即時數據抓取失敗，以下為策展靜態觀點（數字可能過時）</span>`;
+  }
+  fresh.classList.remove('hidden');
+
+  // 關鍵數字一覽列（台股紅漲綠跌）
+  const glance=document.getElementById('glanceBar');
+  if(r){
+    const cell=(lab,val,cls)=>`<div class="bg-white px-4 py-2"><p class="text-[11px] text-slate-400">${lab}</p><p class="text-lg font-bold tabular-nums ${cls||'text-slate-800'}">${val}</p></div>`;
+    const chg = r.change!=null?`${r.change>0?'+':''}${r.change.toFixed(2)} (${pct(r.changePct)})`:'—';
+    glance.innerHTML =
+      cell('收盤價',r.priceStr||'—') + cell('漲跌',chg,upCls(r.change)) +
+      cell('P/E',r.per!=null?r.per+'x':'—') + cell('P/B',r.pbr!=null?r.pbr+'x':'—') +
+      cell('殖利率',r.divYield!=null?r.divYield+'%':'—') + cell('月營收YoY',pct(r.revYoY),upCls(r.revYoY));
+    glance.classList.remove('hidden');
+  } else { glance.innerHTML=''; glance.classList.add('hidden'); }
+
   const bar=document.getElementById('tabBar');
   bar.innerHTML=TABS.map((t,i)=>`
     <button class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${i===0?'border-slate-800 text-slate-800':'border-transparent text-slate-400'}"
@@ -670,6 +741,7 @@ async function callAI(ticker,today,real){
 async function run(){
   const ticker=document.getElementById('inp').value.trim().toUpperCase();
   if(!ticker) return;
+  toggleSidebar(false); // 手機：開始分析即收起側欄
   const now=new Date();
   const timeStr=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const dateStr=document.getElementById('cDate').textContent;
@@ -685,13 +757,12 @@ async function run(){
   document.getElementById('runBtn').disabled=true;
 
   [
-    {t:`> [${timeStr}] 初始化分析引擎 v3.0`,c:'#4ade80',d:60},
-    {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:360},
-    {t:`> [FETCH] 連線 FinMind 抓取即時財報數據...`,c:'#4ade80',d:760},
-    {t:`> [${useAI?'AI':'DB'}] ${useAI?'串接 Claude 生成質化分析...':'載入研究資料庫質化分析...'}`,c:useAI?'#a78bfa':'#94a3b8',d:1300},
-    {t:`> [MODEL] 運行 DCF 折現現金流估值...`,c:'#60a5fa',d:1900},
-    {t:`> [DEBATE] 模擬多空分析師論點...`,c:'#fb923c',d:2500},
-    {t:`> [SIGNAL] 生成投資決策建議...`,c:'#f472b6',d:3100},
+    {t:`> [${timeStr}] 初始化分析引擎 v4.0`,c:'#4ade80',d:40},
+    {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:140},
+    {t:`> [FETCH] 連線 FinMind 抓取日收盤財報數據...`,c:'#4ade80',d:260},
+    {t:`> [${useAI?'AI':'DB'}] ${useAI?'串接 Claude 生成質化分析...':'載入策展資料庫質化分析...'}`,c:useAI?'#a78bfa':'#94a3b8',d:420},
+    {t:`> [MODEL] 計算技術均線與估值訊號...`,c:'#60a5fa',d:560},
+    {t:`> [SIGNAL] 彙整即時數據訊號...`,c:'#f472b6',d:680},
   ].forEach(l=>addLine(l.t,l.c,l.d));
 
   try{
@@ -716,7 +787,7 @@ async function run(){
     }
     // 真實名稱優先（若有抓到價格但 narrative 是 fallback）
     if(narr.real&&narr._src==='gen'&&narr.real.market) narr.co=`${ticker} (${narr.real.market})`;
-    const minWait=new Promise(r=>setTimeout(r,3400));
+    const minWait=new Promise(r=>setTimeout(r,800));
     await minWait;
     cache[cacheKey]=narr;
     addLine(`> [✓] 分析完成！正在生成報告...`,'#86efac',0);
