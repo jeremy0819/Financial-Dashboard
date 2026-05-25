@@ -4,6 +4,8 @@
 >
 > **v3.0 新增：即時真實數據（FinMind API）+ 互動圖表（Chart.js）**
 
+🔗 **線上 Demo**：<https://jeremy0819.github.io/-/>
+
 ---
 
 ## 📊 專案簡介
@@ -81,6 +83,9 @@ Layer 5 — 投資決策    BUY / HOLD / AVOID，催化劑與風險清單
 ## 👤 作者
 
 **郭哲雍 (Kuo Che-Yung)** — 建築學士 + 建築碩士 ｜ 都更開發 × 財務分析
+
+- 本系統部署：[@jeremy0819](https://github.com/jeremy0819)
+- 研究資料庫：[@Timeverse](https://github.com/Timeverse)（My-TW-Coverage）
 
 ---
 
