@@ -919,10 +919,10 @@ function pfLoad(){ try{ const s=localStorage.getItem(PF_KEY); PF=s?JSON.parse(s)
 function pfSave(){ try{ localStorage.setItem(PF_KEY,JSON.stringify(PF)); }catch(e){} }
 function pfLoadTemplate(){ PF=JSON.parse(JSON.stringify(KAKU_TEMPLATE)); pfSave(); renderPortfolio(); }
 function pfClear(){ if(!confirm('確定清空所有持股？（僅清除本機瀏覽器資料）')) return; PF={holdings:[],cash:0}; pfPrices={}; pfSave(); renderPortfolio(); }
-function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):v; pfSave(); renderPortfolio(); }
+function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):v; pfSave(); pfRecompute(); }
 function pfAdd(){ PF.holdings.push({ticker:'',name:'',track:'core',shares:0,cost:0}); pfSave(); renderPortfolio(); }
 function pfDel(i){ PF.holdings.splice(i,1); pfSave(); renderPortfolio(); }
-function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); renderPortfolio(); }
+function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); pfRecompute(); }
 
 // 側欄模式切換
 function setMode(m){
@@ -1016,10 +1016,7 @@ function renderPortfolio(){
       </div></div>`;
     return;
   }
-  const c=pfCompute(), rules=pfRules(c), g=c.gross||1;
-  const totPL=c.rows.reduce((s,r)=>s+(r.pl!=null?r.pl:0),0);
-  const costBase=c.rows.reduce((s,r)=>s+(r.pl!=null&&r.cost!=null?r.cost:0),0);
-  const totPLpct=costBase?totPL/costBase*100:null;
+  const c=pfCompute(), g=c.gross||1;
   const priced=c.rows.some(r=>r.value!=null);
   const trackOpt=sel=>['core','satellite','defense'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${TRACKS[k].label}</option>`).join('');
   const rowsHtml=c.rows.map((r,i)=>`<tr class="border-b border-slate-100">
@@ -1028,20 +1025,12 @@ function renderPortfolio(){
     <td class="px-1.5 py-1"><input type="number" value="${r.shares||0}" onchange="pfEdit(${i},'shares',this.value)" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
     <td class="px-1.5 py-1"><input type="number" step="0.01" value="${r.cost||0}" onchange="pfEdit(${i},'cost',this.value)" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
     <td class="px-1.5 py-1"><select onchange="pfEdit(${i},'track',this.value)" class="bg-slate-50 border border-slate-200 rounded px-1 py-1 text-xs focus:outline-none focus:border-blue-400">${trackOpt(r.track)}</select></td>
-    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-500">${r.price!=null?r.price.toLocaleString():'—'}</td>
-    <td class="px-1.5 py-1 text-right text-xs tabular-nums font-medium text-slate-700">${r.value!=null?Math.round(r.value).toLocaleString():'—'}</td>
-    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-600">${r.value!=null?(r.value/g*100).toFixed(1)+'%':'—'}</td>
-    <td class="px-1.5 py-1 text-right text-xs tabular-nums ${upCls(r.pl)}">${r.pl!=null?(r.pl>0?'+':'')+Math.round(r.pl).toLocaleString()+(r.plPct!=null?`<span class="text-[10px]"> (${r.plPct>0?'+':''}${r.plPct.toFixed(1)}%)</span>`:''):'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-500" id="pfc-price-${i}">${r.price!=null?r.price.toLocaleString():'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums font-medium text-slate-700" id="pfc-val-${i}">${r.value!=null?Math.round(r.value).toLocaleString():'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-600" id="pfc-wt-${i}">${r.value!=null?(r.value/g*100).toFixed(1)+'%':'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums ${upCls(r.pl)}" id="pfc-pl-${i}">${pfPLstr(r)}</td>
     <td class="px-1 py-1 text-center"><button onclick="pfDel(${i})" class="text-slate-300 hover:text-red-500" title="刪除">✕</button></td>
   </tr>`).join('');
-  const trackCard=k=>{ const v=c.byTrack[k]||0, p=v/g*100, T=TRACKS[k], ok=k==='defense'?p>=T.min:(p>=T.min&&p<=T.max);
-    return `<div class="bg-white border ${ok?'border-emerald-200':'border-amber-200'} rounded-xl p-3">
-      <p class="text-xs text-slate-400">${T.label} <span class="text-[10px]">目標 ${k==='defense'?'>'+T.min:T.min+'–'+T.max}%</span></p>
-      <p class="text-lg font-bold tabular-nums" style="color:${T.color}">${p.toFixed(1)}%</p>
-      <p class="text-[11px] text-slate-400 tabular-nums">${Math.round(v).toLocaleString()}</p></div>`; };
-  const rulesHtml=rules.map(rr=>`<div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
-    <span class="text-xs text-slate-600">${rr.pass?'✅':'⚠️'} ${rr.label}</span>
-    <span class="text-xs font-bold tabular-nums ${rr.pass?'text-emerald-600':'text-amber-600'}">${rr.txt}</span></div>`).join('');
   el.innerHTML=`<div class="max-w-5xl mx-auto space-y-4">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div><p class="text-base font-bold text-slate-800">📁 個人資產分析 · 核心-衛星雙軌制</p>
@@ -1052,14 +1041,10 @@ function renderPortfolio(){
         <button id="pfRun" onclick="runPortfolio()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg">🔄 更新報價並分析</button>
       </div>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
-      ${card(`<p class="text-xs text-slate-400 mb-0.5">總市值（含現金）</p><p class="text-lg font-bold text-slate-800 tabular-nums">${Math.round(c.gross).toLocaleString()}</p>`)}
-      ${card(`<p class="text-xs text-slate-400 mb-0.5">總損益</p><p class="text-lg font-bold tabular-nums ${upCls(totPL)}">${priced?(totPL>0?'+':'')+Math.round(totPL).toLocaleString()+(totPLpct!=null?` (${totPLpct>0?'+':''}${totPLpct.toFixed(1)}%)`:''):'—'}</p>`)}
-      ${trackCard('core')}${trackCard('satellite')}${trackCard('defense')}
-    </div>
+    <div id="pfSummary" class="grid grid-cols-2 sm:grid-cols-5 gap-2">${pfSummaryHTML(c)}</div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       ${card(`<p class="text-xs font-bold text-slate-600 mb-2">🥧 三軌配置</p><div style="position:relative;height:220px;width:100%"><canvas id="cvPf"></canvas></div>`)}
-      ${card(`<p class="text-xs font-bold text-slate-600 mb-1">📏 雙軌制紀律檢核</p>${rulesHtml}`)}
+      ${card(`<p class="text-xs font-bold text-slate-600 mb-1">📏 雙軌制紀律檢核</p><div id="pfRulesBox">${pfRulesHTML(c)}</div>`)}
     </div>
     ${card(`<div class="flex items-center justify-between mb-2">
         <p class="text-xs font-bold text-slate-600">持股明細</p>
@@ -1072,9 +1057,13 @@ function renderPortfolio(){
         <th class="px-1.5 py-1 text-right font-medium">市值</th><th class="px-1.5 py-1 text-right font-medium">權重</th>
         <th class="px-1.5 py-1 text-right font-medium">損益</th><th class="px-1 py-1"></th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>`)}
-    ${card(`<div class="flex items-center justify-between mb-2"><p class="text-xs font-bold text-slate-600">🤖 AI 配置健診（選填）</p>
-      <button onclick="pfAI()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">產生建議</button></div>
-      <div id="pfAiBox"><p class="text-xs text-slate-400">填入左側 Anthropic API Key 後，由 Claude 依雙軌制框架健診你的配置（僅供參考，非投資建議）。</p></div>`)}
+    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📋 配置健診（依雙軌制紀律 · 免金鑰）</p>
+      <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>
+      <div class="border-t border-slate-100 mt-3 pt-3">
+        <div class="flex items-center justify-between mb-2"><p class="text-xs font-bold text-slate-600">🤖 AI 深入建議（選填）</p>
+          <button onclick="pfAI()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">產生 AI 建議</button></div>
+        <div id="pfAiBox"><p class="text-xs text-slate-400">上方健診免金鑰即可使用；如需 Claude 進一步質化建議，於左側填入 API Key 再按此鈕（非必要）。</p></div>
+      </div>`)}
     <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 本工具為個人紀律輔助，數據來自第三方 API，不構成投資建議。</p>
   </div>`;
   drawPortfolio(c);
@@ -1084,10 +1073,71 @@ function drawPortfolio(c){
   const el=document.getElementById('cvPf'); if(!el) return;
   if(pfChart) pfChart.destroy();
   const segs=[['core',c.byTrack.core||0],['satellite',c.byTrack.satellite||0],['defense',c.byTrack.defense||0]].filter(s=>s[1]>0);
-  if(!segs.length) return;
+  if(!segs.length){ pfChart=null; return; }
   pfChart=new Chart(el.getContext('2d'),{type:'doughnut',
     data:{labels:segs.map(s=>TRACKS[s[0]].label),datasets:[{data:segs.map(s=>+s[1].toFixed(0)),backgroundColor:segs.map(s=>TRACKS[s[0]].color),borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+}
+
+// ── 計算區塊 HTML（供 render 與就地更新共用）──
+function pfSummaryHTML(c){
+  const g=c.gross||1;
+  const totPL=c.rows.reduce((s,r)=>s+(r.pl!=null?r.pl:0),0);
+  const costBase=c.rows.reduce((s,r)=>s+(r.pl!=null&&r.cost!=null?r.cost:0),0);
+  const totPLpct=costBase?totPL/costBase*100:null;
+  const priced=c.rows.some(r=>r.value!=null);
+  const trackCard=k=>{ const v=c.byTrack[k]||0, p=v/g*100, T=TRACKS[k], ok=k==='defense'?p>=T.min:(p>=T.min&&p<=T.max);
+    return `<div class="bg-white border ${ok?'border-emerald-200':'border-amber-200'} rounded-xl p-3">
+      <p class="text-xs text-slate-400">${T.label} <span class="text-[10px]">目標 ${k==='defense'?'>'+T.min:T.min+'–'+T.max}%</span></p>
+      <p class="text-lg font-bold tabular-nums" style="color:${T.color}">${p.toFixed(1)}%</p>
+      <p class="text-[11px] text-slate-400 tabular-nums">${Math.round(v).toLocaleString()}</p></div>`; };
+  return card(`<p class="text-xs text-slate-400 mb-0.5">總市值（含現金）</p><p class="text-lg font-bold text-slate-800 tabular-nums">${Math.round(c.gross).toLocaleString()}</p>`)+
+    card(`<p class="text-xs text-slate-400 mb-0.5">總損益</p><p class="text-lg font-bold tabular-nums ${upCls(totPL)}">${priced?(totPL>0?'+':'')+Math.round(totPL).toLocaleString()+(totPLpct!=null?` (${totPLpct>0?'+':''}${totPLpct.toFixed(1)}%)`:''):'—'}</p>`)+
+    trackCard('core')+trackCard('satellite')+trackCard('defense');
+}
+function pfRulesHTML(c){
+  return pfRules(c).map(rr=>`<div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+    <span class="text-xs text-slate-600">${rr.pass?'✅':'⚠️'} ${rr.label}</span>
+    <span class="text-xs font-bold tabular-nums ${rr.pass?'text-emerald-600':'text-amber-600'}">${rr.txt}</span></div>`).join('');
+}
+// 規則式（免金鑰）配置健診：依七條紀律與配置缺口產生具體建議
+function pfAdvice(c){
+  const g=c.gross||1, rules=pfRules(c);
+  const core=(c.byTrack.core||0)/g*100, sat=(c.byTrack.satellite||0)/g*100, def=(c.byTrack.defense||0)/g*100;
+  const valued=c.rows.filter(r=>r.value!=null), tips=[];
+  if(!valued.length && !(Number(PF.cash)>0)) return {passCount:0,total:rules.length,tips:['尚未輸入持股或更新報價：填入股數後點「🔄 更新報價並分析」即可看到配置與健診。']};
+  if(core>80) tips.push(`核心倉 ${core.toFixed(1)}% 偏高（目標 70–80%）：可減碼最重的核心股，或增配衛星/防禦平衡。`);
+  else if(valued.some(r=>r.track==='core')&&core<70) tips.push(`核心倉 ${core.toFixed(1)}% 偏低（目標 70–80%）：逢回可加碼核心價值股。`);
+  if(sat>30) tips.push(`衛星倉 ${sat.toFixed(1)}% 超過 30% 上限：動能曝險過大，嚴設停損、分批降低。`);
+  else if(sat<20&&valued.some(r=>r.track==='satellite')) tips.push(`衛星倉 ${sat.toFixed(1)}% 低於 20%：動能參與偏少，趨勢確認時可小量布局。`);
+  if(def<15) tips.push(`防禦現金 ${def.toFixed(1)}% 低於 15%：緩衝不足，建議提高現金以備修正加碼。`);
+  valued.filter(r=>r.value/g*100>=15).forEach(r=>tips.push(`${r.name||r.ticker} 占 ${(r.value/g*100).toFixed(1)}%，超過單一個股 15% 上限：集中度偏高。`));
+  Object.entries(c.byInd).forEach(([k,v])=>{ const p=v/g*100; if(p>=35) tips.push(`產業「${k}」合計 ${p.toFixed(1)}%，超過 35% 上限：產業集中風險偏高。`); });
+  c.rows.filter(r=>r.track==='satellite'&&r.value!=null&&r.value/g*100>=5).forEach(r=>tips.push(`衛星股 ${r.name||r.ticker} 占 ${(r.value/g*100).toFixed(1)}%，超過衛星單檔 5% 上限。`));
+  return {passCount:rules.filter(r=>r.pass).length, total:rules.length, tips};
+}
+function pfAdviceHTML(c){
+  const a=pfAdvice(c);
+  const head=`<p class="text-xs mb-2">紀律檢核：<b class="${a.passCount===a.total?'text-emerald-600':'text-amber-600'}">${a.passCount}/${a.total} 通過</b></p>`;
+  if(!a.tips.length) return head+`<p class="text-xs text-emerald-600">✅ 配置全數符合雙軌制紀律，維持紀律即可。</p>`;
+  return head+`<ul class="space-y-1.5">`+a.tips.map(t=>`<li class="text-xs text-slate-600 flex gap-1.5"><span class="text-amber-500 shrink-0">▶</span><span>${t}</span></li>`).join('')+`</ul>`;
+}
+function pfPLstr(r){ return r.pl!=null?(r.pl>0?'+':'')+Math.round(r.pl).toLocaleString()+(r.plPct!=null?`<span class="text-[10px]"> (${r.plPct>0?'+':''}${r.plPct.toFixed(1)}%)</span>`:''):'—'; }
+// 只就地更新計算結果（不重建輸入框 → 不重設捲動、不失焦）
+function pfRecompute(){
+  if(!PF.holdings.length){ renderPortfolio(); return; }
+  const c=pfCompute(), g=c.gross||1;
+  c.rows.forEach((r,i)=>{
+    const set=(id,html)=>{ const e=document.getElementById(id); if(e) e.innerHTML=html; };
+    set(`pfc-price-${i}`, r.price!=null?r.price.toLocaleString():'—');
+    set(`pfc-val-${i}`, r.value!=null?Math.round(r.value).toLocaleString():'—');
+    set(`pfc-wt-${i}`, r.value!=null?(r.value/g*100).toFixed(1)+'%':'—');
+    const pl=document.getElementById(`pfc-pl-${i}`); if(pl){ pl.className='px-1.5 py-1 text-right text-xs tabular-nums '+upCls(r.pl); pl.innerHTML=pfPLstr(r); }
+  });
+  const s=document.getElementById('pfSummary'); if(s) s.innerHTML=pfSummaryHTML(c);
+  const rb=document.getElementById('pfRulesBox'); if(rb) rb.innerHTML=pfRulesHTML(c);
+  const ab=document.getElementById('pfAdviceBox'); if(ab) ab.innerHTML=pfAdviceHTML(c);
+  drawPortfolio(c);
 }
 
 // AI 配置健診（沿用個股 AI 的瀏覽器直連模式）
