@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI 財務健檢系統 v3.0 | 建築人專屬</title>
+<title>AI 財務健檢系統 v5.0 | 建築人專屬</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,21 +19,35 @@
 <aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v4.0</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v5.0</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
+    <!-- 模式切換 -->
+    <div class="grid grid-cols-2 gap-1 bg-slate-800 rounded-lg p-1">
+      <button id="modeStock" onclick="setMode('stock')" class="text-xs font-bold py-1.5 rounded-md bg-blue-600 text-white transition-colors">📈 個股分析</button>
+      <button id="modePortfolio" onclick="setMode('portfolio')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">📁 個人資產</button>
+    </div>
     <div class="bg-slate-800 rounded-lg p-3 border border-slate-700">
       <p class="text-xs text-slate-400 font-mono mb-0.5">分析時間戳記</p>
       <p id="cDate" class="text-xs text-cyan-300 font-mono"></p>
       <p id="cTime" class="text-sm text-white font-mono font-bold"></p>
     </div>
-    <div>
-      <p class="text-xs text-slate-400 mb-1.5">股票代號</p>
-      <input id="inp" value="2330.TW" onkeydown="if(event.key==='Enter')run()"
-        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-blue-500">
-      <p class="text-xs text-slate-600 mt-1">台股加 .TW（如 2330.TW），美股直接輸入（如 NVDA）</p>
+    <div id="stockControls" class="flex flex-col gap-4">
+      <div>
+        <p class="text-xs text-slate-400 mb-1.5">股票代號</p>
+        <input id="inp" value="2330.TW" onkeydown="if(event.key==='Enter')run()"
+          class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-blue-500">
+        <p class="text-xs text-slate-600 mt-1">台股加 .TW（如 2330.TW），美股直接輸入（如 NVDA）</p>
+      </div>
+      <button onclick="run()" id="runBtn"
+        class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-bold py-2.5 rounded-lg transition-colors">
+        🔍 啟動分析
+      </button>
+      <div>
+        <p class="text-xs text-slate-600 uppercase tracking-wide mb-1.5">快速選股</p>
+        <div id="qp" class="space-y-1"></div>
+      </div>
     </div>
-
     <div>
       <div class="flex items-center justify-between mb-1">
         <p class="text-xs text-slate-400">Anthropic API Key</p>
@@ -41,16 +55,7 @@
       </div>
       <input id="apiKey" type="password" placeholder="sk-ant-..." onchange="checkApiKey()"
         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-emerald-500">
-      <p class="text-xs text-slate-600 mt-1">選填：填入後由 Claude 生成五層質化分析</p>
-    </div>
-
-    <button onclick="run()" id="runBtn"
-      class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-bold py-2.5 rounded-lg transition-colors">
-      🔍 啟動分析
-    </button>
-    <div>
-      <p class="text-xs text-slate-600 uppercase tracking-wide mb-1.5">快速選股</p>
-      <div id="qp" class="space-y-1"></div>
+      <p class="text-xs text-slate-600 mt-1">選填：個股由 Claude 生成五層；個人資產可生成配置健診</p>
     </div>
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
@@ -66,7 +71,7 @@
   <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
     <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
     <div class="min-w-0">
-      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v4.0</p>
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v5.0</p>
       <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 五層次深度分析</p>
     </div>
   </header>
@@ -105,6 +110,9 @@
     <div id="tabBar" class="bg-white border-b border-slate-200 px-4 flex gap-0.5 shrink-0 overflow-x-auto ns"></div>
     <div id="tabContent" class="flex-1 overflow-y-auto p-5 ns"></div>
   </div>
+
+  <!-- Portfolio (個人資產分析 · 核心-衛星雙軌制) -->
+  <div id="portfolio" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
 
 </main>
 
@@ -391,23 +399,34 @@ function buildSignals(real){
     s.margin={label:d>=0.5?'毛利率改善':d<=-0.5?'毛利率下滑':'毛利率持平',tone:d>=0.5?'good':d<=-0.5?'bad':'warn',
       note:'毛利率 '+real.grossM.toFixed(1)+'%（季變動 '+(d>=0?'+':'')+d.toFixed(1)+'pt）'};
   }
+  if(real.inst&&real.inst.fSum5!=null){
+    const f=real.inst.fSum5;
+    s.chip={label:f>0?'外資近5日買超':f<0?'外資近5日賣超':'外資近5日中性',tone:f>0?'good':f<0?'bad':'warn',
+      note:'外資5日 '+(f>0?'+':'')+f.toLocaleString()+' 張 ｜ 最新日 '+(real.inst.fLast>0?'+':'')+real.inst.fLast.toLocaleString()+' 張'};
+  }
   return s;
 }
 
 async function fetchReal(ticker){
   const isTW=/\.TWO?$/.test(ticker);
-  const real={ isTW, market:isTW?'台股':'美股', revSeries:null,
+  const real={ isTW, market:isTW?'台股':'美股', revSeries:null, name:null, industry:null,
     price:null, priceStr:null, per:null, pbr:null, divYield:null,
     grossM:null, grossMPrev:null, opM:null, netM:null, eps:null, revYoY:null, tech:null,
+    inst:null, margin:null, fcfReal:null, divHist:null, cashYield:null,
     asOf:null, priceDate:null, change:null, changePct:null, perPctile:null, perDate:null, revDate:null, finDate:null, signals:{} };
 
   if(isTW){
     const id=ticker.replace(/\.TWO?$/,'');
-    const [px,per,rev,fin]=await Promise.all([
+    const [px,per,rev,fin,inst,marg,cf,div,info]=await Promise.all([
       fmGet('TaiwanStockPrice',id,daysAgo(500)),
       fmGet('TaiwanStockPER',id,daysAgo(400)),
       fmGet('TaiwanStockMonthRevenue',id,daysAgo(420)),
-      fmGet('TaiwanStockFinancialStatements',id,daysAgo(420))
+      fmGet('TaiwanStockFinancialStatements',id,daysAgo(420)),
+      fmGet('TaiwanStockInstitutionalInvestorsBuySell',id,daysAgo(80)),
+      fmGet('TaiwanStockMarginPurchaseShortSale',id,daysAgo(80)),
+      fmGet('TaiwanStockCashFlowsStatement',id,daysAgo(420)),
+      fmGet('TaiwanStockDividend',id,daysAgo(1900)),
+      fmGet('TaiwanStockInfo',id,daysAgo(30))
     ]);
     const pxs=px.slice().sort((a,b)=>a.date<b.date?-1:1);
     if(pxs.length){ const n=pxs.length,last=pxs[n-1]; real.price=Number(last.close); real.priceStr='NT$'+real.price.toLocaleString(); real.priceDate=last.date; real.asOf=last.date;
@@ -441,6 +460,42 @@ async function fetchReal(ticker){
       real.grossMPrev=gm(qp);
       if(q&&q.EPS!=null) real.eps=q.EPS;
     }
+    // 三大法人（外資/投信/自營）每日淨額（張＝股/1000）
+    if(inst.length){
+      const byD={};
+      inst.forEach(r=>{ const d=byD[r.date]=byD[r.date]||{f:0,t:0,d:0}; const net=(Number(r.buy)-Number(r.sell))/1000;
+        if(r.name==='Foreign_Investor') d.f+=net; else if(r.name==='Investment_Trust') d.t+=net; else d.d+=net; });
+      const ds=Object.keys(byD).sort(), tail=ds.slice(-20), L=ds[ds.length-1];
+      const fSum5=ds.slice(-5).reduce((s,d)=>s+byD[d].f,0);
+      real.inst={ dates:tail, foreign:tail.map(d=>+byD[d].f.toFixed(0)), trust:tail.map(d=>+byD[d].t.toFixed(0)), dealer:tail.map(d=>+byD[d].d.toFixed(0)),
+        lastDate:L, fLast:+byD[L].f.toFixed(0), tLast:+byD[L].t.toFixed(0), dLast:+byD[L].d.toFixed(0), fSum5:+fSum5.toFixed(0) };
+    }
+    // 融資融券餘額（張）
+    if(marg.length){
+      const s=marg.slice().sort((a,b)=>a.date<b.date?-1:1), last=s[s.length-1], prev=s.length>1?s[s.length-2]:null;
+      real.margin={ date:last.date, mBal:Number(last.MarginPurchaseTodayBalance), sBal:Number(last.ShortSaleTodayBalance),
+        mChg:prev?Number(last.MarginPurchaseTodayBalance)-Number(prev.MarginPurchaseTodayBalance):null };
+    }
+    // 真實自由現金流＝營業現金流＋資本支出(負值)；季報為當年累計
+    if(cf.length){
+      const byD={}; cf.forEach(r=>{ (byD[r.date]=byD[r.date]||{})[r.type]=Number(r.value); });
+      const ds=Object.keys(byD).sort(), q=byD[ds[ds.length-1]];
+      const ocf=q?(q.CashFlowsFromOperatingActivities!=null?q.CashFlowsFromOperatingActivities:q.NetCashInflowFromOperatingActivities):null;
+      const capex=q&&q.PropertyAndPlantAndEquipment!=null?q.PropertyAndPlantAndEquipment:null;
+      if(ocf!=null) real.fcfReal={ date:ds[ds.length-1], ocf, capex, fcf:capex!=null?ocf+capex:ocf };
+    }
+    // 股利：近年現金股利 + 近12月現金殖利率
+    if(div.length){
+      const recs=div.map(r=>({ ex:r.CashExDividendTradingDate||'', cash:Number(r.CashEarningsDistribution||0)+Number(r.CashStatutorySurplus||0) })).filter(r=>r.cash>0&&r.ex);
+      const byY={}; recs.forEach(r=>{ const y=r.ex.slice(0,4); byY[y]=(byY[y]||0)+r.cash; });
+      const years=Object.keys(byY).filter(y=>/^\d{4}$/.test(y)).sort();
+      if(years.length) real.divHist=years.slice(-5).map(y=>({y,cash:+byY[y].toFixed(2)}));
+      const cutoff=daysAgo(365), ttm=recs.filter(r=>r.ex>=cutoff).reduce((s,r)=>s+r.cash,0);
+      if(real.price){ if(ttm>0) real.cashYield=+(ttm/real.price*100).toFixed(2);
+        else if(real.divHist) real.cashYield=+(real.divHist[real.divHist.length-1].cash/real.price*100).toFixed(2); }
+    }
+    // 公司名稱 / 產業別
+    if(info.length){ real.name=info[0].stock_name||null; real.industry=info[0].industry_category||null; }
     real.tech=pxs.length?buildTech(pxs,'close'):null;
   } else {
     const px=(await fmGet('USStockPrice',ticker,daysAgo(500))).slice().sort((a,b)=>a.date<b.date?-1:1);
@@ -454,7 +509,7 @@ async function fetchReal(ticker){
   return real;
 }
 // ─── TAB STATE ───────────────────────────────────────────
-let curTab=0, curData=null, techChart=null, revChart=null;
+let curTab=0, curData=null, techChart=null, revChart=null, instChart=null;
 const TABS=[
   {icon:'🏥',label:'財務健檢'},
   {icon:'📊',label:'估值分析'},
@@ -504,14 +559,27 @@ function tabHealth(d){
   const scCol=sc>=70?'text-emerald-600':sc>=50?'text-amber-600':'text-red-600';
   const r=d.real, sg=r?r.signals:null;
   const noReal = r?'':`<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">⚠️ 即時數據抓取失敗（網路／代號／API 限流），以下為策展靜態觀點，數字可能過時。<button onclick="run()" class="ml-1 underline text-blue-600 font-bold">重試</button></div>`;
-  const sigCard = (sg&&(sg.tech||sg.val||sg.rev||sg.margin)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📡 即時數據訊號</span>${dataBadge(r.asOf)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${signalPill(sg.tech)}${signalPill(sg.val)}${signalPill(sg.rev)}${signalPill(sg.margin)}</div>`) : '';
+  const sigCard = (sg&&(sg.tech||sg.val||sg.rev||sg.margin||sg.chip)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📡 即時數據訊號</span>${dataBadge(r.asOf)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${signalPill(sg.tech)}${signalPill(sg.val)}${signalPill(sg.rev)}${signalPill(sg.margin)}${signalPill(sg.chip)}</div>`) : '';
   const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5/10/月/季/半年線）${dataBadge(r.priceDate)}</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
   const revCard = (r&&r.revSeries) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">🏭 近12月營收（億）${dataBadge(r.revDate)}</p><div style="position:relative;height:170px;width:100%"><canvas id="cvRev"></canvas></div>`) : '';
+  const chipCard = (r&&(r.inst||r.margin)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📊 籌碼面（三大法人買賣超／融資融券）</span>${r.inst?dataBadge(r.inst.lastDate):(r.margin?dataBadge(r.margin.date):'')}</div>`+
+    (r.inst?`<div class="grid grid-cols-3 gap-2 mb-2">
+      <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-[11px] text-slate-400">外資</p><p class="text-sm font-bold tabular-nums ${upCls(r.inst.fLast)}">${r.inst.fLast>0?'+':''}${r.inst.fLast.toLocaleString()} 張</p></div>
+      <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-[11px] text-slate-400">投信</p><p class="text-sm font-bold tabular-nums ${upCls(r.inst.tLast)}">${r.inst.tLast>0?'+':''}${r.inst.tLast.toLocaleString()} 張</p></div>
+      <div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-[11px] text-slate-400">自營</p><p class="text-sm font-bold tabular-nums ${upCls(r.inst.dLast)}">${r.inst.dLast>0?'+':''}${r.inst.dLast.toLocaleString()} 張</p></div>
+    </div>`:'')+
+    (r.margin?`<div class="grid grid-cols-2 gap-2 text-xs mb-2">
+      <div class="bg-slate-50 rounded-lg p-2"><span class="text-slate-400">融資餘額 </span><b class="tabular-nums">${r.margin.mBal.toLocaleString()} 張</b>${r.margin.mChg!=null?` <span class="${upCls(r.margin.mChg)} tabular-nums">(${r.margin.mChg>0?'+':''}${r.margin.mChg.toLocaleString()})</span>`:''}</div>
+      <div class="bg-slate-50 rounded-lg p-2"><span class="text-slate-400">融券餘額 </span><b class="tabular-nums">${r.margin.sBal.toLocaleString()} 張</b></div>
+    </div>`:'')+
+    (r.inst?`<div style="position:relative;height:170px;width:100%"><canvas id="cvInst"></canvas></div>`:'')) : '';
+  const fcfStr = (r&&r.fcfReal) ? `${fmtBig(r.fcfReal.fcf)}<span class="text-[10px] text-slate-400 ml-1">（營業現金流 ${fmtBig(r.fcfReal.ocf)}${r.fcfReal.capex!=null?' − 資本支出 '+fmtBig(Math.abs(r.fcfReal.capex)):''}，${fmtDate(r.fcfReal.date)} 當年累計）</span>` : d.fcf;
   return `<div class="max-w-3xl space-y-3">
     ${noReal}
     ${sigCard}
     ${chartCard}
     ${revCard}
+    ${chipCard}
     <div class="flex items-center gap-2 flex-wrap pt-1">
       <span class="text-sm font-bold text-slate-700">財務評分與摘要</span>${staticBadge(d._src)}
     </div>
@@ -527,7 +595,7 @@ function tabHealth(d){
     `,'border-dashed')}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
       ${card(metaRow('📈','5年營收趨勢',d.rev)+metaRow('💰','淨利趨勢',d.ni),'border-dashed')}
-      ${card(metaRow('💵','自由現金流',d.fcf)+metaRow('📉','利潤率趨勢',d.margin),'border-dashed')}
+      ${card(metaRow('💵','自由現金流',fcfStr)+metaRow('📉','利潤率趨勢',d.margin),'border-dashed')}
     </div>
     ${card(metaRow('🏦','債務水平',d.debt),'border-dashed')}
   </div>`;
@@ -545,8 +613,14 @@ function tabValuation(d){
     </div>
     ${r.signals&&r.signals.val?signalPill(r.signals.val):''}` : '';
   const gap = (r&&r.price!=null) ? `<p class="text-xs text-amber-700 bg-amber-50 rounded-lg p-2 mt-2">⚠️ 此 DCF／結論為靜態策展數據，與最新收盤 ${r.priceStr} 可能落差大，僅供質化參考。</p>` : '';
+  const divBlock = (r&&(r.cashYield!=null||r.divHist)) ? `<div class="flex items-center gap-2 mt-2 mb-1"><span class="text-sm font-bold text-slate-700">💵 股利政策</span><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700">FinMind 股利</span></div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      ${card(`<p class="text-xs text-slate-400 mb-1">現金殖利率(近12月)</p><p class="text-xl font-bold text-emerald-600 tabular-nums">${r.cashYield!=null?r.cashYield+'%':'—'}</p>`)}
+      ${r.divHist?r.divHist.slice(-3).reverse().map(h=>card(`<p class="text-xs text-slate-400 mb-1">${h.y} 現金股利</p><p class="text-lg font-bold text-slate-800 tabular-nums">${h.cash}</p>`)).join(''):''}
+    </div>` : '';
   return `<div class="max-w-2xl space-y-3">
     ${realBlock}
+    ${divBlock}
     <div class="flex items-center gap-2 flex-wrap pt-1"><span class="text-sm font-bold text-slate-700">策展估值觀點</span>${staticBadge(d._src)}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">同業平均 P/E</p><p class="text-lg font-bold text-slate-800">${d.ipe}</p>`,'border-dashed')}
@@ -650,19 +724,36 @@ function drawRev(rev){
       scales:{ x:{ticks:{font:{size:9}}}, y:{position:'right'} }}
   });
 }
+// 三大法人近20日淨額（張，堆疊長條）
+function drawInst(inst){
+  const el=document.getElementById('cvInst'); if(!el) return;
+  if(instChart) instChart.destroy();
+  instChart=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels:inst.dates.map(fmtDate),datasets:[
+      {label:'外資',data:inst.foreign,backgroundColor:'rgba(244,63,94,.6)'},
+      {label:'投信',data:inst.trust,backgroundColor:'rgba(59,130,246,.6)'},
+      {label:'自營',data:inst.dealer,backgroundColor:'rgba(168,85,247,.5)'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{boxWidth:10,font:{size:10}},position:'top'}},
+      scales:{ x:{stacked:true,ticks:{maxTicksLimit:8,font:{size:9}}}, y:{stacked:true,position:'right',ticks:{font:{size:9}}} }}
+  });
+}
 
 function renderTabContent(d,i){
   const fns=[tabHealth,tabValuation,tabGrowth,tabDebate,tabDecision];
   document.getElementById('tabContent').innerHTML=fns[i](d);
-  if(i===0 && d.real){ if(d.real.tech) drawTech(d.real.tech); if(d.real.revSeries) drawRev(d.real.revSeries); }
+  if(i===0 && d.real){ if(d.real.tech) drawTech(d.real.tech); if(d.real.revSeries) drawRev(d.real.revSeries); if(d.real.inst) drawInst(d.real.inst); }
 }
 
 function renderResults(ticker,d){
   curData=d; curTab=0;
   const r=d.real;
   const srcTag = d._src==='ai'?'Claude AI':d._src==='db'?'策展資料庫':'自動生成';
-  document.getElementById('hTitle').textContent=`📋 ${d.co} (${ticker.toUpperCase()}) — 財務健檢報告`;
-  document.getElementById('hSub').textContent=`質化分析：${srcTag}${r?' ｜ 數字：FinMind 日收盤':''}`;
+  const coName = (r&&r.name)?r.name:d.co;
+  document.getElementById('hTitle').textContent=`📋 ${coName} (${ticker.toUpperCase()}) — 財務健檢報告`;
+  document.getElementById('hSub').textContent=`質化分析：${srcTag}${r?' ｜ 數字：FinMind 日收盤':''}${r&&r.industry?' ｜ '+r.industry:''}`;
 
   // 資料新鮮度橫幅
   const fresh=document.getElementById('freshBar');
@@ -757,7 +848,7 @@ async function run(){
   document.getElementById('runBtn').disabled=true;
 
   [
-    {t:`> [${timeStr}] 初始化分析引擎 v4.0`,c:'#4ade80',d:40},
+    {t:`> [${timeStr}] 初始化分析引擎 v5.0`,c:'#4ade80',d:40},
     {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:140},
     {t:`> [FETCH] 連線 FinMind 抓取日收盤財報數據...`,c:'#4ade80',d:260},
     {t:`> [${useAI?'AI':'DB'}] ${useAI?'串接 Claude 生成質化分析...':'載入策展資料庫質化分析...'}`,c:useAI?'#a78bfa':'#94a3b8',d:420},
@@ -786,7 +877,7 @@ async function run(){
       narr._src=DB[ticker]?'db':'gen'; narr.real=real0;
     }
     // 真實名稱優先（若有抓到價格但 narrative 是 fallback）
-    if(narr.real&&narr._src==='gen'&&narr.real.market) narr.co=`${ticker} (${narr.real.market})`;
+    if(narr.real&&narr._src==='gen') narr.co=narr.real.name?narr.real.name:(narr.real.market?`${ticker} (${narr.real.market})`:narr.co);
     const minWait=new Promise(r=>setTimeout(r,800));
     await minWait;
     cache[cacheKey]=narr;
@@ -806,6 +897,221 @@ function finish(ticker,data){
   document.getElementById('runBtn').disabled=false;
   renderResults(ticker,data);
 }
+
+// ═══ 個人資產分析（核心-衛星雙軌制）═══════════════════════════
+// 持股只存在本機 localStorage，不上傳；程式碼僅內建框架範本（股數成本留 0）
+const PF_KEY='kaku_portfolio_v1';
+const TRACKS={ core:{label:'核心倉',color:'#10b981',min:70,max:80}, satellite:{label:'衛星倉',color:'#f59e0b',min:20,max:30}, defense:{label:'防禦現金',color:'#3b82f6',min:15,max:100} };
+const KAKU_TEMPLATE={ holdings:[
+  {ticker:'2330.TW',name:'台積電',track:'core',shares:0,cost:0},
+  {ticker:'0050.TW',name:'元大台灣50',track:'core',shares:0,cost:0},
+  {ticker:'2379.TW',name:'瑞昱',track:'core',shares:0,cost:0},
+  {ticker:'2881.TW',name:'富邦金',track:'core',shares:0,cost:0},
+  {ticker:'1216.TW',name:'統一',track:'core',shares:0,cost:0},
+  {ticker:'2454.TW',name:'聯發科',track:'satellite',shares:0,cost:0},
+  {ticker:'3661.TW',name:'世芯-KY',track:'satellite',shares:0,cost:0},
+  {ticker:'3017.TW',name:'奇鋐',track:'satellite',shares:0,cost:0},
+  {ticker:'2327.TW',name:'國巨',track:'satellite',shares:0,cost:0}
+], cash:0 };
+let PF={holdings:[],cash:0}, pfPrices={}, pfChart=null, appMode='stock';
+
+function pfLoad(){ try{ const s=localStorage.getItem(PF_KEY); PF=s?JSON.parse(s):{holdings:[],cash:0}; }catch(e){ PF={holdings:[],cash:0}; } if(!PF.holdings) PF.holdings=[]; if(PF.cash==null) PF.cash=0; }
+function pfSave(){ try{ localStorage.setItem(PF_KEY,JSON.stringify(PF)); }catch(e){} }
+function pfLoadTemplate(){ PF=JSON.parse(JSON.stringify(KAKU_TEMPLATE)); pfSave(); renderPortfolio(); }
+function pfClear(){ if(!confirm('確定清空所有持股？（僅清除本機瀏覽器資料）')) return; PF={holdings:[],cash:0}; pfPrices={}; pfSave(); renderPortfolio(); }
+function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):v; pfSave(); renderPortfolio(); }
+function pfAdd(){ PF.holdings.push({ticker:'',name:'',track:'core',shares:0,cost:0}); pfSave(); renderPortfolio(); }
+function pfDel(i){ PF.holdings.splice(i,1); pfSave(); renderPortfolio(); }
+function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); renderPortfolio(); }
+
+// 側欄模式切換
+function setMode(m){
+  appMode=m; const stock=m==='stock';
+  document.getElementById('modeStock').className='text-xs font-bold py-1.5 rounded-md transition-colors '+(stock?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
+  document.getElementById('modePortfolio').className='text-xs font-bold py-1.5 rounded-md transition-colors '+(!stock?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
+  document.getElementById('stockControls').classList.toggle('hidden',!stock);
+  document.getElementById('portfolio').classList.toggle('hidden',stock);
+  if(stock){
+    document.getElementById('welcome').classList.toggle('hidden', !!curData);
+    document.getElementById('results').classList.toggle('hidden', !curData);
+    document.getElementById('results').classList.toggle('flex', !!curData);
+    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v5.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 五層次深度分析'; }
+  } else {
+    document.getElementById('welcome').classList.add('hidden');
+    document.getElementById('results').classList.add('hidden'); document.getElementById('results').classList.remove('flex');
+    document.getElementById('hTitle').textContent='📁 個人資產分析 · 核心-衛星雙軌制';
+    document.getElementById('hSub').textContent='資料只存本機瀏覽器 ｜ 報價來源 FinMind 日收盤';
+    renderPortfolio();
+  }
+  toggleSidebar(false);
+}
+
+// 抓取組合內每檔現價 + 產業
+async function runPortfolio(){
+  const btn=document.getElementById('pfRun'); if(btn){ btn.disabled=true; btn.textContent='⏳ 抓取中...'; }
+  const uniq=[...new Set(PF.holdings.map(h=>(h.ticker||'').trim().toUpperCase()).filter(Boolean))];
+  await Promise.all(uniq.map(async t=>{
+    try{
+      if(/\.TWO?$/.test(t)){ const id=t.replace(/\.TWO?$/,'');
+        const [px,info]=await Promise.all([ fmGet('TaiwanStockPrice',id,daysAgo(14)), fmGet('TaiwanStockInfo',id,daysAgo(30)) ]);
+        const s=px.slice().sort((a,b)=>a.date<b.date?-1:1), last=s[s.length-1];
+        pfPrices[t]={ price:last?Number(last.close):null, date:last?last.date:null, industry:info[0]?info[0].industry_category:null, name:info[0]?info[0].stock_name:null };
+      } else { const s=(await fmGet('USStockPrice',t,daysAgo(14))).slice().sort((a,b)=>a.date<b.date?-1:1), last=s[s.length-1];
+        pfPrices[t]={ price:last?Number(last.Close):null, date:last?last.date:null, industry:'美股', name:t }; }
+    }catch(e){ pfPrices[t]=pfPrices[t]||{price:null,date:null,industry:null,name:null}; }
+  }));
+  PF.holdings.forEach(h=>{ const t=(h.ticker||'').trim().toUpperCase(); if(t&&pfPrices[t]&&!h.name&&pfPrices[t].name) h.name=pfPrices[t].name; });
+  pfSave();
+  if(btn){ btn.disabled=false; btn.textContent='🔄 更新報價並分析'; }
+  renderPortfolio();
+}
+
+// 計算市值/損益/軌道占比/產業占比
+function pfCompute(){
+  let total=0; const rows=PF.holdings.map(h=>{
+    const t=(h.ticker||'').trim().toUpperCase(), pr=pfPrices[t]||{};
+    const price=pr.price!=null?pr.price:null;
+    const value=(price!=null&&h.shares)?price*h.shares:null;
+    const cost=(h.cost&&h.shares)?h.cost*h.shares:null;
+    const pl=(value!=null&&cost!=null)?value-cost:null;
+    const plPct=(pl!=null&&cost)?pl/cost*100:null;
+    if(value!=null) total+=value;
+    return {...h,t,price,value,cost,pl,plPct,industry:pr.industry||null};
+  });
+  const cash=Number(PF.cash)||0, gross=total+cash;
+  const byTrack={core:0,satellite:0,defense:cash};
+  rows.forEach(r=>{ if(r.value!=null) byTrack[r.track]=(byTrack[r.track]||0)+r.value; });
+  const byInd={}; rows.forEach(r=>{ if(r.value!=null){ const k=r.industry||'未分類'; byInd[k]=(byInd[k]||0)+r.value; } });
+  return {rows,total,cash,gross,byTrack,byInd};
+}
+// 雙軌制紀律檢核（七條）
+function pfRules(c){
+  const g=c.gross||1;
+  const corePct=(c.byTrack.core||0)/g*100, satPct=(c.byTrack.satellite||0)/g*100, defPct=(c.byTrack.defense||0)/g*100;
+  const valued=c.rows.filter(r=>r.value!=null);
+  const maxSingle=valued.length?Math.max(...valued.map(r=>r.value/g*100)):0;
+  const indVals=Object.values(c.byInd), maxInd=indVals.length?Math.max(...indVals)/g*100:0;
+  const satVals=c.rows.filter(r=>r.track==='satellite'&&r.value!=null).map(r=>r.value/g*100), maxSat=satVals.length?Math.max(...satVals):0;
+  return [
+    {label:'核心倉 70–80%', pass:corePct>=70&&corePct<=80, txt:corePct.toFixed(1)+'%'},
+    {label:'衛星倉 20–30%', pass:satPct>=20&&satPct<=30, txt:satPct.toFixed(1)+'%'},
+    {label:'防禦層 > 15%', pass:defPct>=15, txt:defPct.toFixed(1)+'%'},
+    {label:'單一個股 < 15%', pass:maxSingle<15, txt:'最大 '+maxSingle.toFixed(1)+'%'},
+    {label:'單一產業 < 35%', pass:maxInd<35, txt:'最大 '+maxInd.toFixed(1)+'%'},
+    {label:'衛星單檔 < 5%', pass:maxSat<5, txt:'最大 '+maxSat.toFixed(1)+'%'},
+    {label:'衛星總和 < 30%', pass:satPct<30, txt:satPct.toFixed(1)+'%'}
+  ];
+}
+
+function renderPortfolio(){
+  const el=document.getElementById('portfolio'); if(!el) return;
+  if(!PF.holdings.length){
+    el.innerHTML=`<div class="max-w-md mx-auto text-center py-16">
+      <p class="text-5xl mb-3">📁</p>
+      <p class="text-base font-bold text-slate-500 mb-1">個人資產分析 · 核心-衛星雙軌制</p>
+      <p class="text-sm text-slate-400 mb-6">建立投資組合，依雙軌制框架檢核配置紀律。<br>資料只存在本機瀏覽器（localStorage），不會上傳。</p>
+      <div class="flex gap-2 justify-center">
+        <button onclick="pfLoadTemplate()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg">載入雙軌制範本</button>
+        <button onclick="pfAdd()" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50">➕ 手動新增</button>
+      </div></div>`;
+    return;
+  }
+  const c=pfCompute(), rules=pfRules(c), g=c.gross||1;
+  const totPL=c.rows.reduce((s,r)=>s+(r.pl!=null?r.pl:0),0);
+  const costBase=c.rows.reduce((s,r)=>s+(r.pl!=null&&r.cost!=null?r.cost:0),0);
+  const totPLpct=costBase?totPL/costBase*100:null;
+  const priced=c.rows.some(r=>r.value!=null);
+  const trackOpt=sel=>['core','satellite','defense'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${TRACKS[k].label}</option>`).join('');
+  const rowsHtml=c.rows.map((r,i)=>`<tr class="border-b border-slate-100">
+    <td class="px-1.5 py-1"><input value="${r.ticker||''}" onchange="pfEdit(${i},'ticker',this.value)" placeholder="2330.TW" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:border-blue-400"></td>
+    <td class="px-1.5 py-1"><input value="${(r.name||'').replace(/"/g,'&quot;')}" onchange="pfEdit(${i},'name',this.value)" class="w-24 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-blue-400"></td>
+    <td class="px-1.5 py-1"><input type="number" value="${r.shares||0}" onchange="pfEdit(${i},'shares',this.value)" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
+    <td class="px-1.5 py-1"><input type="number" step="0.01" value="${r.cost||0}" onchange="pfEdit(${i},'cost',this.value)" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
+    <td class="px-1.5 py-1"><select onchange="pfEdit(${i},'track',this.value)" class="bg-slate-50 border border-slate-200 rounded px-1 py-1 text-xs focus:outline-none focus:border-blue-400">${trackOpt(r.track)}</select></td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-500">${r.price!=null?r.price.toLocaleString():'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums font-medium text-slate-700">${r.value!=null?Math.round(r.value).toLocaleString():'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums text-slate-600">${r.value!=null?(r.value/g*100).toFixed(1)+'%':'—'}</td>
+    <td class="px-1.5 py-1 text-right text-xs tabular-nums ${upCls(r.pl)}">${r.pl!=null?(r.pl>0?'+':'')+Math.round(r.pl).toLocaleString()+(r.plPct!=null?`<span class="text-[10px]"> (${r.plPct>0?'+':''}${r.plPct.toFixed(1)}%)</span>`:''):'—'}</td>
+    <td class="px-1 py-1 text-center"><button onclick="pfDel(${i})" class="text-slate-300 hover:text-red-500" title="刪除">✕</button></td>
+  </tr>`).join('');
+  const trackCard=k=>{ const v=c.byTrack[k]||0, p=v/g*100, T=TRACKS[k], ok=k==='defense'?p>=T.min:(p>=T.min&&p<=T.max);
+    return `<div class="bg-white border ${ok?'border-emerald-200':'border-amber-200'} rounded-xl p-3">
+      <p class="text-xs text-slate-400">${T.label} <span class="text-[10px]">目標 ${k==='defense'?'>'+T.min:T.min+'–'+T.max}%</span></p>
+      <p class="text-lg font-bold tabular-nums" style="color:${T.color}">${p.toFixed(1)}%</p>
+      <p class="text-[11px] text-slate-400 tabular-nums">${Math.round(v).toLocaleString()}</p></div>`; };
+  const rulesHtml=rules.map(rr=>`<div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+    <span class="text-xs text-slate-600">${rr.pass?'✅':'⚠️'} ${rr.label}</span>
+    <span class="text-xs font-bold tabular-nums ${rr.pass?'text-emerald-600':'text-amber-600'}">${rr.txt}</span></div>`).join('');
+  el.innerHTML=`<div class="max-w-5xl mx-auto space-y-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div><p class="text-base font-bold text-slate-800">📁 個人資產分析 · 核心-衛星雙軌制</p>
+        <p class="text-xs text-slate-400">資料只存本機瀏覽器 ｜ 報價 FinMind 日收盤${priced?'':' ｜ 尚未更新報價'}</p></div>
+      <div class="flex gap-2">
+        <button onclick="pfAdd()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">➕ 新增</button>
+        <button onclick="pfClear()" class="px-3 py-2 bg-white border border-slate-300 text-slate-400 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-500">清空</button>
+        <button id="pfRun" onclick="runPortfolio()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg">🔄 更新報價並分析</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+      ${card(`<p class="text-xs text-slate-400 mb-0.5">總市值（含現金）</p><p class="text-lg font-bold text-slate-800 tabular-nums">${Math.round(c.gross).toLocaleString()}</p>`)}
+      ${card(`<p class="text-xs text-slate-400 mb-0.5">總損益</p><p class="text-lg font-bold tabular-nums ${upCls(totPL)}">${priced?(totPL>0?'+':'')+Math.round(totPL).toLocaleString()+(totPLpct!=null?` (${totPLpct>0?'+':''}${totPLpct.toFixed(1)}%)`:''):'—'}</p>`)}
+      ${trackCard('core')}${trackCard('satellite')}${trackCard('defense')}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      ${card(`<p class="text-xs font-bold text-slate-600 mb-2">🥧 三軌配置</p><div style="position:relative;height:220px;width:100%"><canvas id="cvPf"></canvas></div>`)}
+      ${card(`<p class="text-xs font-bold text-slate-600 mb-1">📏 雙軌制紀律檢核</p>${rulesHtml}`)}
+    </div>
+    ${card(`<div class="flex items-center justify-between mb-2">
+        <p class="text-xs font-bold text-slate-600">持股明細</p>
+        <div class="text-xs text-slate-400 flex items-center gap-1">防禦現金 <input type="number" value="${PF.cash||0}" onchange="pfSetCash(this.value)" class="w-24 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></div>
+      </div>
+      <div class="overflow-x-auto ns"><table class="w-full text-xs"><thead><tr class="text-slate-400 border-b border-slate-200">
+        <th class="px-1.5 py-1 text-left font-medium">代號</th><th class="px-1.5 py-1 text-left font-medium">名稱</th>
+        <th class="px-1.5 py-1 text-right font-medium">股數</th><th class="px-1.5 py-1 text-right font-medium">成本</th>
+        <th class="px-1.5 py-1 text-left font-medium">軌道</th><th class="px-1.5 py-1 text-right font-medium">現價</th>
+        <th class="px-1.5 py-1 text-right font-medium">市值</th><th class="px-1.5 py-1 text-right font-medium">權重</th>
+        <th class="px-1.5 py-1 text-right font-medium">損益</th><th class="px-1 py-1"></th>
+      </tr></thead><tbody>${rowsHtml}</tbody></table></div>`)}
+    ${card(`<div class="flex items-center justify-between mb-2"><p class="text-xs font-bold text-slate-600">🤖 AI 配置健診（選填）</p>
+      <button onclick="pfAI()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">產生建議</button></div>
+      <div id="pfAiBox"><p class="text-xs text-slate-400">填入左側 Anthropic API Key 後，由 Claude 依雙軌制框架健診你的配置（僅供參考，非投資建議）。</p></div>`)}
+    <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 本工具為個人紀律輔助，數據來自第三方 API，不構成投資建議。</p>
+  </div>`;
+  drawPortfolio(c);
+}
+
+function drawPortfolio(c){
+  const el=document.getElementById('cvPf'); if(!el) return;
+  if(pfChart) pfChart.destroy();
+  const segs=[['core',c.byTrack.core||0],['satellite',c.byTrack.satellite||0],['defense',c.byTrack.defense||0]].filter(s=>s[1]>0);
+  if(!segs.length) return;
+  pfChart=new Chart(el.getContext('2d'),{type:'doughnut',
+    data:{labels:segs.map(s=>TRACKS[s[0]].label),datasets:[{data:segs.map(s=>+s[1].toFixed(0)),backgroundColor:segs.map(s=>TRACKS[s[0]].color),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}});
+}
+
+// AI 配置健診（沿用個股 AI 的瀏覽器直連模式）
+async function pfAI(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  const box=document.getElementById('pfAiBox'); if(!box) return;
+  if(!(apiKey.startsWith('sk-ant-')&&apiKey.length>20)){ box.innerHTML='<p class="text-xs text-amber-600">請先於左側填入 Anthropic API Key（sk-ant-...）</p>'; return; }
+  const c=pfCompute(), g=c.gross||1;
+  box.innerHTML='<p class="text-xs text-slate-400">⏳ Claude 配置健診中...</p>';
+  const lines=c.rows.filter(r=>r.value!=null).map(r=>`${r.name||r.ticker}(${TRACKS[r.track].label}/${r.industry||'未分類'}) ${(r.value/g*100).toFixed(1)}% 損益${r.plPct!=null?(r.plPct>0?'+':'')+r.plPct.toFixed(1)+'%':'NA'}`).join('；');
+  const summ=`總市值${Math.round(c.gross).toLocaleString()}；核心${((c.byTrack.core||0)/g*100).toFixed(0)}% 衛星${((c.byTrack.satellite||0)/g*100).toFixed(0)}% 防禦${((c.byTrack.defense||0)/g*100).toFixed(0)}%。持股：${lines||'（尚未更新報價）'}`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:MODEL,max_tokens:900,temperature:0,
+        system:'你是價值投資與資產配置顧問，依「核心-衛星雙軌制」（核心70-80%價值長抱、衛星20-30%動能停損、防禦現金>15%；單一個股<15%、單一產業<35%、衛星單檔<5%）健診投資組合。用繁體中文、條列、具體可執行，聚焦配置失衡、集中風險與衛星紀律，不要客套與免責聲明。',
+        messages:[{role:'user',content:'請健診以下投資組合：'+summ}]})});
+    const j=await res.json(); if(j.error) throw new Error(j.error.message||'API 錯誤');
+    const txt=j.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    box.innerHTML=`<div class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">${txt.replace(/[<>]/g,m=>m==='<'?'&lt;':'&gt;')}</div>`;
+  }catch(e){ box.innerHTML=`<p class="text-xs text-red-500">AI 健診失敗：${e.message}</p>`; }
+}
+
+pfLoad(); // 啟動載入本機組合
 </script>
 </body>
 </html>
