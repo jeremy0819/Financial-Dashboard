@@ -919,7 +919,30 @@ function pfLoad(){ try{ const s=localStorage.getItem(PF_KEY); PF=s?JSON.parse(s)
 function pfSave(){ try{ localStorage.setItem(PF_KEY,JSON.stringify(PF)); }catch(e){} }
 function pfLoadTemplate(){ PF=JSON.parse(JSON.stringify(KAKU_TEMPLATE)); pfSave(); renderPortfolio(); }
 function pfClear(){ if(!confirm('確定清空所有持股？（僅清除本機瀏覽器資料）')) return; PF={holdings:[],cash:0}; pfPrices={}; pfSave(); renderPortfolio(); }
-function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):v; pfSave(); pfRecompute(); }
+// 代號正規化：純數字台股代號自動補 .TW（避免被當成美股而查無報價）
+function pfNorm(t){ t=(t||'').trim().toUpperCase(); if(/^\d{4,6}[A-Z]?$/.test(t)) t+='.TW'; return t; }
+function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):(f==='ticker'?pfNorm(v):v); pfSave(); pfRecompute(); if(f==='ticker') pfFetchOne(PF.holdings[i].ticker); }
+// 編輯代號後自動抓該檔報價（免按「更新報價」即可看到現價/市值/名稱）
+async function pfFetchOne(t){
+  t=pfNorm(t); if(!t) return;
+  if(pfPrices[t] && pfPrices[t].price!=null){ pfFillNames(t); pfRecompute(); return; }
+  try{
+    if(/\.TWO?$/.test(t)){ const id=t.replace(/\.TWO?$/,'');
+      const [px,info]=await Promise.all([ fmGet('TaiwanStockPrice',id,daysAgo(14)), fmGet('TaiwanStockInfo',id,daysAgo(30)) ]);
+      const s=px.slice().sort((a,b)=>a.date<b.date?-1:1), last=s[s.length-1];
+      pfPrices[t]={ price:last?Number(last.close):null, date:last?last.date:null, industry:info[0]?info[0].industry_category:null, name:info[0]?info[0].stock_name:null };
+    } else { const s=(await fmGet('USStockPrice',t,daysAgo(14))).slice().sort((a,b)=>a.date<b.date?-1:1), last=s[s.length-1];
+      pfPrices[t]={ price:last?Number(last.Close):null, date:last?last.date:null, industry:'美股', name:t }; }
+    pfSave();
+  }catch(e){}
+  pfFillNames(t); pfRecompute();
+}
+// 就地回填名稱輸入框（使用者未填時），不重建整列、不影響焦點
+function pfFillNames(t){
+  const nm=pfPrices[t]&&pfPrices[t].name; if(!nm) return;
+  const rows=document.querySelectorAll('#portfolio tbody tr');
+  PF.holdings.forEach((h,idx)=>{ if(pfNorm(h.ticker)===t){ if(!h.name){ h.name=nm; pfSave(); } const inp=rows[idx]&&rows[idx].children[1].querySelector('input'); if(inp&&!inp.value) inp.value=nm; } });
+}
 function pfAdd(){ PF.holdings.push({ticker:'',name:'',track:'core',shares:0,cost:0}); pfSave(); renderPortfolio(); }
 function pfDel(i){ PF.holdings.splice(i,1); pfSave(); renderPortfolio(); }
 function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); pfRecompute(); }
@@ -949,7 +972,7 @@ function setMode(m){
 // 抓取組合內每檔現價 + 產業
 async function runPortfolio(){
   const btn=document.getElementById('pfRun'); if(btn){ btn.disabled=true; btn.textContent='⏳ 抓取中...'; }
-  const uniq=[...new Set(PF.holdings.map(h=>(h.ticker||'').trim().toUpperCase()).filter(Boolean))];
+  const uniq=[...new Set(PF.holdings.map(h=>pfNorm(h.ticker)).filter(Boolean))];
   await Promise.all(uniq.map(async t=>{
     try{
       if(/\.TWO?$/.test(t)){ const id=t.replace(/\.TWO?$/,'');
@@ -960,7 +983,7 @@ async function runPortfolio(){
         pfPrices[t]={ price:last?Number(last.Close):null, date:last?last.date:null, industry:'美股', name:t }; }
     }catch(e){ pfPrices[t]=pfPrices[t]||{price:null,date:null,industry:null,name:null}; }
   }));
-  PF.holdings.forEach(h=>{ const t=(h.ticker||'').trim().toUpperCase(); if(t&&pfPrices[t]&&!h.name&&pfPrices[t].name) h.name=pfPrices[t].name; });
+  PF.holdings.forEach(h=>{ const t=pfNorm(h.ticker); if(t&&pfPrices[t]&&!h.name&&pfPrices[t].name) h.name=pfPrices[t].name; });
   pfSave();
   if(btn){ btn.disabled=false; btn.textContent='🔄 更新報價並分析'; }
   renderPortfolio();
@@ -969,7 +992,7 @@ async function runPortfolio(){
 // 計算市值/損益/軌道占比/產業占比
 function pfCompute(){
   let total=0; const rows=PF.holdings.map(h=>{
-    const t=(h.ticker||'').trim().toUpperCase(), pr=pfPrices[t]||{};
+    const t=pfNorm(h.ticker), pr=pfPrices[t]||{};
     const price=pr.price!=null?pr.price:null;
     const value=(price!=null&&h.shares)?price*h.shares:null;
     const cost=(h.cost&&h.shares)?h.cost*h.shares:null;
@@ -1020,7 +1043,7 @@ function renderPortfolio(){
   const priced=c.rows.some(r=>r.value!=null);
   const trackOpt=sel=>['core','satellite','defense'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${TRACKS[k].label}</option>`).join('');
   const rowsHtml=c.rows.map((r,i)=>`<tr class="border-b border-slate-100">
-    <td class="px-1.5 py-1"><input value="${r.ticker||''}" onchange="pfEdit(${i},'ticker',this.value)" placeholder="2330.TW" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:border-blue-400"></td>
+    <td class="px-1.5 py-1"><input value="${r.ticker||''}" onchange="pfEdit(${i},'ticker',this.value);this.value=(PF.holdings[${i}]||{}).ticker||this.value" placeholder="2330.TW 或 2330" title="台股可只打數字(自動補.TW)，美股直接打代號如 NVDA" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:border-blue-400"></td>
     <td class="px-1.5 py-1"><input value="${(r.name||'').replace(/"/g,'&quot;')}" onchange="pfEdit(${i},'name',this.value)" class="w-24 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs focus:outline-none focus:border-blue-400"></td>
     <td class="px-1.5 py-1"><input type="number" value="${r.shares||''}" placeholder="股數" title="持有股數" onchange="pfEdit(${i},'shares',this.value)" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
     <td class="px-1.5 py-1"><input type="number" step="0.01" value="${r.cost||''}" placeholder="每股成本" title="每股平均買入價（可留空）" onchange="pfEdit(${i},'cost',this.value)" class="w-24 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400"></td>
