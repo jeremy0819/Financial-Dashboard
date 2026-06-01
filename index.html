@@ -49,14 +49,14 @@
         <div id="qp" class="space-y-1"></div>
       </div>
     </div>
-    <div>
+    <div id="apiKeySection">
       <div class="flex items-center justify-between mb-1">
         <p class="text-xs text-slate-400">Anthropic API Key</p>
         <span id="apiStatus" class="text-xs text-slate-600 font-mono">質化分析：DB</span>
       </div>
       <input id="apiKey" type="password" placeholder="sk-ant-..." onchange="checkApiKey()"
         class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-emerald-500">
-      <p class="text-xs text-slate-600 mt-1">選填：個股由 Claude 生成五層；個人資產可生成配置健診</p>
+      <p class="text-xs text-slate-600 mt-1">選填：個股由 Claude 生成六層；個人資產可生成配置健診</p>
     </div>
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
@@ -141,6 +141,7 @@ setInterval(tick,1000); tick();
 const FM='https://api.finmindtrade.com/api/v4/data';   // FinMind：CORS開放、免金鑰
 const MODEL='claude-sonnet-4-20250514';                // 如需更新模型改這裡
 const VERSION='v6.0';
+const PROXY_URL=null; // wire-proxy.sh 會把 null 換成你的 Worker URL（字串）
 const cache={};                                        // 結果快取（key = ticker|mode），確保一致性
 
 // ─── QUICK PICKS ─────────────────────────────────────────
@@ -961,21 +962,43 @@ function addLine(text,color,delay){
 }
 
 // ─── API KEY CHECK ───────────────────────────────────────
+function isAIReady(){
+  if(PROXY_URL) return true; // 雲端代理模式，永遠可用
+  const k=document.getElementById('apiKey')?.value.trim()||'';
+  return k.startsWith('sk-ant-')&&k.length>20;
+}
+function getApiHeaders(){
+  if(PROXY_URL) return {'Content-Type':'application/json','anthropic-version':'2023-06-01'};
+  const k=document.getElementById('apiKey').value.trim();
+  return {'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+}
+function getApiEndpoint(){ return PROXY_URL?`${PROXY_URL}/v1/messages`:'https://api.anthropic.com/v1/messages'; }
 function checkApiKey(){
+  if(PROXY_URL) return; // proxy 模式不需要 key
   const k=document.getElementById('apiKey').value.trim();
   const st=document.getElementById('apiStatus');
   if(k.startsWith('sk-ant-')&&k.length>20){ st.textContent='質化分析：AI'; st.className='text-xs text-emerald-400 font-mono'; }
   else if(k.length>0){ st.textContent='金鑰格式錯誤'; st.className='text-xs text-red-400 font-mono'; }
   else { st.textContent='質化分析：DB'; st.className='text-xs text-slate-600 font-mono'; }
 }
+// proxy 模式啟動時，隱藏 key 輸入欄、顯示已啟用狀態
+(function initProxyUI(){
+  if(!PROXY_URL) return;
+  document.addEventListener('DOMContentLoaded',()=>{
+    const sec=document.getElementById('apiKeySection');
+    if(sec) sec.innerHTML=`<div class="bg-emerald-900/30 border border-emerald-700 rounded-lg px-3 py-2 flex items-center gap-2">
+      <span class="text-emerald-400 text-sm">✓</span>
+      <div><p class="text-xs text-emerald-400 font-bold">AI 分析已啟用</p><p class="text-[10px] text-slate-500">雲端代理模式 · 免填 Key</p></div>
+    </div>`;
+  });
+})();
 
-// ─── CLAUDE AI（質化五層，以真實數字為依據；flat schema + temperature 0 + cache）──
+// ─── CLAUDE AI（質化六層，以真實數字為依據；flat schema + temperature 0 + cache）──
 async function callAI(ticker,today,real){
-  const apiKey=document.getElementById('apiKey').value.trim();
   const ctx = real ? `已知即時數據（請以此為準）：股價=${real.priceStr}；P/E=${real.per}；P/B=${real.pbr}；殖利率=${real.divYield}%；月營收年增=${real.revYoY!=null?real.revYoY.toFixed(1)+'%':'NA'}；最新季毛利率=${real.grossM!=null?real.grossM.toFixed(1)+'%':'NA'}；EPS=${real.eps}` : '無即時數據，請以你的知識分析。';
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch(getApiEndpoint(),{
     method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    headers:getApiHeaders(),
     body:JSON.stringify({
       model:MODEL,
       max_tokens:1500,
@@ -999,8 +1022,7 @@ async function run(){
   const now=new Date();
   const timeStr=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const dateStr=document.getElementById('cDate').textContent;
-  const apiKey=document.getElementById('apiKey').value.trim();
-  const useAI=apiKey.startsWith('sk-ant-')&&apiKey.length>20;
+  const useAI=isAIReady();
   const cacheKey=`${ticker}|${useAI?'ai':'db'}`;
 
   document.getElementById('term').innerHTML='';
@@ -1337,18 +1359,17 @@ function pfRecompute(){
   drawPortfolio(c);
 }
 
-// AI 配置健診（沿用個股 AI 的瀏覽器直連模式）
+// AI 配置健診
 async function pfAI(){
-  const apiKey=document.getElementById('apiKey').value.trim();
   const box=document.getElementById('pfAiBox'); if(!box) return;
-  if(!(apiKey.startsWith('sk-ant-')&&apiKey.length>20)){ box.innerHTML='<p class="text-xs text-amber-600">請先於左側填入 Anthropic API Key（sk-ant-...）</p>'; return; }
+  if(!isAIReady()){ box.innerHTML='<p class="text-xs text-amber-600">請先於左側填入 Anthropic API Key（sk-ant-...）</p>'; return; }
   const c=pfCompute(), g=c.gross||1;
   box.innerHTML='<p class="text-xs text-slate-400">⏳ Claude 配置健診中...</p>';
   const lines=c.rows.filter(r=>r.value!=null).map(r=>`${r.name||r.ticker}(${TRACKS[r.track].label}/${r.industry||'未分類'}) ${(r.value/g*100).toFixed(1)}% 損益${r.plPct!=null?(r.plPct>0?'+':'')+r.plPct.toFixed(1)+'%':'NA'}`).join('；');
   const summ=`總市值${Math.round(c.gross).toLocaleString()}；核心${((c.byTrack.core||0)/g*100).toFixed(0)}% 衛星${((c.byTrack.satellite||0)/g*100).toFixed(0)}% 防禦${((c.byTrack.defense||0)/g*100).toFixed(0)}%。持股：${lines||'（尚未更新報價）'}`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    const res=await fetch(getApiEndpoint(),{method:'POST',
+      headers:getApiHeaders(),
       body:JSON.stringify({model:MODEL,max_tokens:900,temperature:0,
         system:'你是價值投資與資產配置顧問，依「核心-衛星雙軌制」（核心70-80%價值長抱、衛星20-30%動能停損、防禦現金>15%；單一個股<15%、單一產業<35%、衛星單檔<5%）健診投資組合。用繁體中文、條列、具體可執行，聚焦配置失衡、集中風險與衛星紀律，不要客套與免責聲明。',
         messages:[{role:'user',content:'請健診以下投資組合：'+summ}]})});
