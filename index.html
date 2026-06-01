@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI 財務健檢系統 v5.0 | 建築人專屬</title>
+<title>AI 財務健檢系統 v6.0 | 台灣投資理財</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,13 +19,14 @@
 <aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v5.0</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v6.0</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
     <!-- 模式切換 -->
-    <div class="grid grid-cols-2 gap-1 bg-slate-800 rounded-lg p-1">
+    <div class="flex flex-col gap-1 bg-slate-800 rounded-lg p-1">
       <button id="modeStock" onclick="setMode('stock')" class="text-xs font-bold py-1.5 rounded-md bg-blue-600 text-white transition-colors">📈 個股分析</button>
       <button id="modePortfolio" onclick="setMode('portfolio')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">📁 個人資產</button>
+      <button id="modeCalc" onclick="setMode('calc')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">🧮 投資計算器</button>
     </div>
     <div class="bg-slate-800 rounded-lg p-3 border border-slate-700">
       <p class="text-xs text-slate-400 font-mono mb-0.5">分析時間戳記</p>
@@ -60,7 +61,8 @@
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
     <p>數據來源：FinMind（日收盤）</p>
-    <p>Architecture meets Finance</p>
+    <p class="mt-0.5">Architecture meets Finance v6.0</p>
+    <p class="mt-1 text-slate-600">⚠️ 僅供參考，非投資建議</p>
   </div>
 </aside>
 <div id="backdrop" class="hidden md:hidden fixed inset-0 bg-black/40 z-30" onclick="toggleSidebar(false)"></div>
@@ -71,8 +73,8 @@
   <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
     <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
     <div class="min-w-0">
-      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v5.0</p>
-      <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 五層次深度分析</p>
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v6.0</p>
+      <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 六層次深度分析</p>
     </div>
   </header>
 
@@ -92,14 +94,20 @@
   <!-- Welcome -->
   <div id="welcome" class="flex-1 flex flex-col items-center justify-center text-center p-8">
     <p class="text-5xl mb-3">📊</p>
-    <p class="text-base font-bold text-slate-500 mb-1">AI 財務分析系統待命中</p>
-    <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 五層次深度分析</p>
-    <div class="flex gap-2 flex-wrap justify-center">
+    <p class="text-base font-bold text-slate-500 mb-1">AI 財務分析系統 v6.0 待命中</p>
+    <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 六層次深度分析 + 情境試算</p>
+    <div class="flex gap-2 flex-wrap justify-center mb-4">
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🏥</p><p class="text-xs text-slate-500 mt-0.5">財務健檢</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">📊</p><p class="text-xs text-slate-500 mt-0.5">估值分析</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🚀</p><p class="text-xs text-slate-500 mt-0.5">成長潛力</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">⚔️</p><p class="text-xs text-slate-500 mt-0.5">多空辯論</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🎯</p><p class="text-xs text-slate-500 mt-0.5">投資決策</p></div>
+      <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-center w-20"><p class="text-xl">📐</p><p class="text-xs text-blue-600 mt-0.5 font-bold">情境分析 NEW</p></div>
+    </div>
+    <div class="flex gap-2 flex-wrap justify-center text-xs text-slate-400">
+      <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🕸️ 六維雷達圖</span>
+      <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🧮 投資計算器</span>
+      <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🏦 升息情境模擬</span>
     </div>
   </div>
 
@@ -113,6 +121,9 @@
 
   <!-- Portfolio (個人資產分析 · 核心-衛星雙軌制) -->
   <div id="portfolio" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
+
+  <!-- Calculator 投資計算器 -->
+  <div id="calcPanel" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
 
 </main>
 
@@ -129,6 +140,7 @@ setInterval(tick,1000); tick();
 // ─── CONFIG ──────────────────────────────────────────────
 const FM='https://api.finmindtrade.com/api/v4/data';   // FinMind：CORS開放、免金鑰
 const MODEL='claude-sonnet-4-20250514';                // 如需更新模型改這裡
+const VERSION='v6.0';
 const cache={};                                        // 結果快取（key = ticker|mode），確保一致性
 
 // ─── QUICK PICKS ─────────────────────────────────────────
@@ -169,7 +181,12 @@ const DB={
     lt:'2030年全球AI晶片代工地位無可撼動，長線複利首選標的',
     cat:['2nm量產與CoWoS大幅擴產','輝達/蘋果AI晶片需求持續放量','美國廠量產帶動全球客戶信心'],
     risk:['台海軍事衝突風險溢價升高','三星/英特爾先進製程追趕','全球經濟衰退壓縮科技資本支出'],
-    why:'AI時代最確定的受益者，技術護城河極深，逢回調積極買入'
+    why:'AI時代最確定的受益者，技術護城河極深，逢回調積極買入',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'AI CoWoS訂單超預期、2nm量產提前、美廠加速',eps:'EPS NT$50+',target:'NT$1,350+',upside:'+30%',note:'輝達/蘋果AI晶片需求暴增，台積電獲利能力進一步躍升'},
+      base:{label:'基準',color:'blue',trigger:'AI需求穩健成長、CoWoS按計劃擴產',eps:'EPS NT$44–48',target:'NT$1,050–1,200',upside:'+5–15%',note:'AI超級週期持續，技術領先格局不變，估值維持合理溢價'},
+      worst:{label:'悲觀',color:'red',trigger:'台海地緣升溫、AI資本支出縮減、先進製程客戶流失',eps:'EPS NT$35–40',target:'NT$700–850',upside:'-20%',note:'外資因地緣風險大幅縮減台股持倉，估值折扣擴大'}
+    }
   },
   '2454.TW':{
     co:'聯發科 (MediaTek)', score:78, trend:'S',
@@ -196,7 +213,12 @@ const DB={
     lt:'AI Edge運算+汽車晶片雙引擎驅動，2030年前穩健複利',
     cat:['Dimensity旗艦晶片持續攻高端','AI PC/穿戴滲透加速','天璣衛星通訊晶片放量'],
     risk:['高通高端競爭加劇','中國消費電子需求復甦不確定','地緣政治出口管制'],
-    why:'低估值+AI轉型雙重優勢，現價具備良好買點'
+    why:'低估值+AI轉型雙重優勢，現價具備良好買點',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'旗艦機種份額突破50%、AI PC出貨超預期',eps:'EPS NT$70+',target:'NT$1,350+',upside:'+25%',note:'高端晶片比重提升，毛利率突破52%，估值向高通看齊'},
+      base:{label:'基準',color:'blue',trigger:'Dimensity穩健攻高端、AI Edge滲透有序',eps:'EPS NT$60–65',target:'NT$1,050–1,200',upside:'+5%',note:'低本益比提供保護，AI轉型加速但高通競爭需持續觀察'},
+      worst:{label:'悲觀',color:'red',trigger:'高通壓制高端、中國手機需求再度疲軟',eps:'EPS NT$45–52',target:'NT$650–800',upside:'-30%',note:'手機出貨量低於預期，AI Edge起量不如預期，估值壓縮'}
+    }
   },
   '2881.TW':{
     co:'富邦金控 (Fubon Financial)', score:65, trend:'S',
@@ -223,7 +245,12 @@ const DB={
     lt:'金融業數位化轉型+東南亞擴張，長期穩健複利標的',
     cat:['升息環境持續支撐淨利差','東南亞市場業務擴張','AI風控提升資產品質'],
     risk:['全球降息週期壓縮利差','台股/房市修正衝擊壽險投資收益','監管資本要求提升'],
-    why:'高股息防禦特性強，成長性有限，持有領息為主'
+    why:'高股息防禦特性強，成長性有限，持有領息為主',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'升息高峰延長、東南亞業務爆發、台股大多頭',eps:'EPS NT$7.5+',target:'NT$90+',upside:'+15%',note:'利差持續擴大，壽險投資收益受惠股市高位，殖利率吸引存股資金'},
+      base:{label:'基準',color:'blue',trigger:'升息周期結束、業務穩健增長',eps:'EPS NT$6.5–7.0',target:'NT$75–85',upside:'+5%',note:'防禦特性突出，殖利率5–6%吸引長線，成長有限但穩定'},
+      worst:{label:'悲觀',color:'red',trigger:'全球降息壓縮利差、台股修正衝擊壽險收益',eps:'EPS NT$4.5–5.5',target:'NT$55–65',upside:'-25%',note:'壽險投資收益下滑，資本適足率壓力升高，股息可能縮減'}
+    }
   },
   '2308.TW':{
     co:'台達電 (Delta Electronics)', score:74, trend:'S',
@@ -250,7 +277,12 @@ const DB={
     lt:'全球能源轉型最大受益者之一，2030年前穩健複利標的',
     cat:['AI伺服器電源訂單爆量','EV充電歐洲市場擴張','高效率電源產品毛利率提升'],
     risk:['中國低價競爭侵蝕份額','EV成長速度不如預期','原料成本上升壓縮利潤'],
-    why:'AI+EV雙趨勢核心受益者，估值合理，逢回調布局'
+    why:'AI+EV雙趨勢核心受益者，估值合理，逢回調布局',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'AI伺服器電源訂單暴增、EV歐洲市場加速',eps:'EPS NT$20+',target:'NT$420+',upside:'+40%',note:'AI基礎設施建設浪潮擴大，台達電成最大受益者之一，毛利率突破32%'},
+      base:{label:'基準',color:'blue',trigger:'AI電源穩健成長、EV充電按計劃擴張',eps:'EPS NT$16–18',target:'NT$290–340',upside:'+5%',note:'估值合理，雙引擎驅動確立，但競爭壓力使上行空間受限'},
+      worst:{label:'悲觀',color:'red',trigger:'EV成長急踩剎車、中國低價競爭加劇',eps:'EPS NT$11–14',target:'NT$180–230',upside:'-30%',note:'EV充電訂單大幅縮減，AI電源增長無法完全填補缺口'}
+    }
   },
   'NVDA':{
     co:'輝達 (NVIDIA)', score:95, trend:'S',
@@ -277,7 +309,12 @@ const DB={
     lt:'AI基礎設施十年週期中最大受益者，長線持有邏輯清晰',
     cat:['Blackwell GB200大規模出貨','主權AI/企業AI採購加速','NIM軟體服務提升毛利'],
     risk:['AMD/客戶自研晶片份額侵蝕','AI資本支出ROI受質疑','出口管制升級'],
-    why:'長線邏輯完整無懸念，短期估值偏高，持有等待更佳買點'
+    why:'長線邏輯完整無懸念，短期估值偏高，持有等待更佳買點',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'Blackwell超預期、主權AI擴大採購、NIM軟體高速成長',eps:'EPS $5.5+',target:'$200+',upside:'+60%',note:'AI基礎設施支出再加速，CUDA護城河更深，估值重評'},
+      base:{label:'基準',color:'blue',trigger:'Blackwell按計劃出貨、資料中心需求維持',eps:'EPS $4.0–4.4',target:'$130–160',upside:'持平',note:'基本面強勁但估值已充分反映，持有為主'},
+      worst:{label:'悲觀',color:'red',trigger:'雲端巨頭自研晶片成功、出口管制升級',eps:'EPS $2.5–3.0',target:'$70–90',upside:'-40%',note:'競爭格局改變，CUDA護城河受侵蝕，高本益比大幅壓縮'}
+    }
   },
   'TSLA':{
     co:'特斯拉 (Tesla)', score:55, trend:'W',
@@ -304,7 +341,12 @@ const DB={
     lt:'FSD/Robotaxi若成功將顛覆估值邏輯，但執行風險與時程高度不確定',
     cat:['德州Robotaxi正式商業化','FSD授權給其他車廠','Optimus機器人量產出貨'],
     risk:['EV市場份額持續流失','毛利率進一步壓縮','馬斯克離心風險'],
-    why:'高估值+基本面疲弱+執行風險三重疑慮，現階段宜觀望'
+    why:'高估值+基本面疲弱+執行風險三重疑慮，現階段宜觀望',
+    sc:{
+      best:{label:'樂觀',color:'emerald',trigger:'德州Robotaxi成功商業化、FSD授權第三方車廠',eps:'EPS $7–10',target:'$450+',upside:'+70%',note:'軟體服務收入爆發，估值邏輯從汽車廠轉向AI平台公司'},
+      base:{label:'基準',color:'blue',trigger:'交車量緩慢回升、FSD持續迭代',eps:'EPS $3.5–4.5',target:'$200–280',upside:'持平',note:'本業毛利率企穩，但Robotaxi落地時程不確定，估值高位震盪'},
+      worst:{label:'悲觀',color:'red',trigger:'EV份額持續流失、FSD監管受阻、馬斯克離心',eps:'EPS $1–2',target:'$80–120',upside:'-60%',note:'汽車本業利潤率雪崩，AI遠景夢碎，高本益比大幅壓縮'}
+    }
   }
 };
 
@@ -509,13 +551,14 @@ async function fetchReal(ticker){
   return real;
 }
 // ─── TAB STATE ───────────────────────────────────────────
-let curTab=0, curData=null, techChart=null, revChart=null, instChart=null;
+let curTab=0, curData=null, techChart=null, revChart=null, instChart=null, radarChart=null;
 const TABS=[
   {icon:'🏥',label:'財務健檢'},
   {icon:'📊',label:'估值分析'},
   {icon:'🚀',label:'成長潛力'},
   {icon:'⚔️',label:'多空辯論'},
-  {icon:'🎯',label:'投資決策'}
+  {icon:'🎯',label:'投資決策'},
+  {icon:'📐',label:'情境分析'}
 ];
 function switchTab(i){
   curTab=i;
@@ -560,6 +603,7 @@ function tabHealth(d){
   const r=d.real, sg=r?r.signals:null;
   const noReal = r?'':`<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">⚠️ 即時數據抓取失敗（網路／代號／API 限流），以下為策展靜態觀點，數字可能過時。<button onclick="run()" class="ml-1 underline text-blue-600 font-bold">重試</button></div>`;
   const sigCard = (sg&&(sg.tech||sg.val||sg.rev||sg.margin||sg.chip)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📡 即時數據訊號</span>${dataBadge(r.asOf)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${signalPill(sg.tech)}${signalPill(sg.val)}${signalPill(sg.rev)}${signalPill(sg.margin)}${signalPill(sg.chip)}</div>`) : '';
+  const radarCard = card(`<p class="text-xs font-bold text-slate-600 mb-2">🕸️ 六維評分雷達圖</p><div style="position:relative;height:280px;width:100%"><canvas id="cvRadar"></canvas></div>`);
   const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5/10/月/季/半年線）${dataBadge(r.priceDate)}</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
   const revCard = (r&&r.revSeries) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">🏭 近12月營收（億）${dataBadge(r.revDate)}</p><div style="position:relative;height:170px;width:100%"><canvas id="cvRev"></canvas></div>`) : '';
   const chipCard = (r&&(r.inst||r.margin)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📊 籌碼面（三大法人買賣超／融資融券）</span>${r.inst?dataBadge(r.inst.lastDate):(r.margin?dataBadge(r.margin.date):'')}</div>`+
@@ -577,7 +621,7 @@ function tabHealth(d){
   return `<div class="max-w-3xl space-y-3">
     ${noReal}
     ${sigCard}
-    ${chartCard}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${radarCard}${chartCard||'<div></div>'}</div>
     ${revCard}
     ${chipCard}
     <div class="flex items-center gap-2 flex-wrap pt-1">
@@ -742,9 +786,10 @@ function drawInst(inst){
 }
 
 function renderTabContent(d,i){
-  const fns=[tabHealth,tabValuation,tabGrowth,tabDebate,tabDecision];
+  const fns=[tabHealth,tabValuation,tabGrowth,tabDebate,tabDecision,tabScenario];
   document.getElementById('tabContent').innerHTML=fns[i](d);
   if(i===0 && d.real){ if(d.real.tech) drawTech(d.real.tech); if(d.real.revSeries) drawRev(d.real.revSeries); if(d.real.inst) drawInst(d.real.inst); }
+  if(i===0) drawRadar(d);
 }
 
 function renderResults(ticker,d){
@@ -787,6 +832,124 @@ function renderResults(ticker,d){
   renderTabContent(d,0); // 容器顯示後再畫圖，避免 canvas 尺寸為 0
 }
 
+// ─── RADAR CHART ─────────────────────────────────────────
+function computeRadarScores(d){
+  const r=d.real, sg=r?r.signals:{};
+  // 六維：財務健康、成長性、估值吸引力、籌碼面、技術面、股利
+  const health = Math.min(100, d.score||60);
+  // 成長性：revYoY + rate string
+  let growth = 50;
+  if(r&&r.revYoY!=null){ growth = r.revYoY>=20?90:r.revYoY>=10?75:r.revYoY>=0?55:35; }
+  else if(d.rate){ const m=d.rate.match(/(\d+)/); if(m) growth=Math.min(95,Number(m[1])*3); }
+  // 估值吸引力：P/E百分位越低越好
+  let valAttr = 60;
+  if(r&&r.perPctile!=null){ valAttr = r.perPctile<=20?88:r.perPctile<=40?72:r.perPctile<=60?55:r.perPctile<=80?38:25; }
+  else { valAttr = d.verd==='U'?80:d.verd==='F'?60:35; }
+  // 籌碼面
+  let chip = 55;
+  if(sg&&sg.chip){ chip = sg.chip.tone==='good'?80:sg.chip.tone==='bad'?30:55; }
+  // 技術面
+  let tech = 55;
+  if(sg&&sg.tech){ tech = sg.tech.tone==='good'?82:sg.tech.tone==='bad'?28:55; }
+  // 股利
+  let div = 40;
+  if(r&&r.divYield!=null){ div = r.divYield>=5?85:r.divYield>=3?68:r.divYield>=1?50:30; }
+  else if(r&&r.cashYield!=null){ div = r.cashYield>=5?85:r.cashYield>=3?68:r.cashYield>=1?50:30; }
+  return [health, growth, valAttr, chip, tech, div];
+}
+function drawRadar(d){
+  const el=document.getElementById('cvRadar'); if(!el) return;
+  if(radarChart) radarChart.destroy();
+  const scores=computeRadarScores(d);
+  radarChart=new Chart(el.getContext('2d'),{
+    type:'radar',
+    data:{
+      labels:['財務健康','成長性','估值吸引力','籌碼面','技術面','股利'],
+      datasets:[{label:d.co||'標的',data:scores,
+        backgroundColor:'rgba(59,130,246,0.2)',borderColor:'rgba(59,130,246,0.8)',
+        pointBackgroundColor:'rgba(59,130,246,1)',pointRadius:4,borderWidth:2}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      scales:{r:{min:0,max:100,ticks:{stepSize:25,font:{size:9},color:'#94a3b8'},
+        grid:{color:'#e2e8f0'},pointLabels:{font:{size:11},color:'#475569'}}},
+      plugins:{legend:{display:false}}}
+  });
+}
+
+// ─── SCENARIO ANALYSIS TAB ───────────────────────────────
+function tabScenario(d){
+  const sc=d.sc;
+  const r=d.real;
+  const curPrice = r&&r.priceStr ? r.priceStr : d.cur;
+
+  // 若無 scenario 資料（fallback 標的），顯示通用框架
+  if(!sc){
+    return `<div class="max-w-2xl space-y-3">
+      <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">📐 情境分析框架</span></div>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
+        此標的目前無精選情境數據。建議：<br>• 填入 Anthropic API Key 後重新分析，Claude 將自動產生三情境預測<br>• 或參考「🎯 投資決策」Tab 的催化劑與風險清單
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        ${['樂觀','基準','悲觀'].map((l,i)=>{
+          const col=['emerald','blue','red'][i];
+          return card(`<p class="text-xs font-bold text-${col}-600 mb-2">${['🌟','📊','⚠️'][i]} ${l}情境</p>
+            <p class="text-xs text-slate-400">EPS 預估</p><p class="text-base font-bold text-slate-700 tabular-nums mb-2">—</p>
+            <p class="text-xs text-slate-400">目標價</p><p class="text-base font-bold text-${col}-600 tabular-nums">—</p>`,`border-${col}-200`);
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  const scKeys=['best','base','worst'];
+  const icons=['🌟','📊','⚠️'];
+  const scenarioCards = scKeys.map((k,i)=>{
+    const s=sc[k];
+    return card(`
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-base">${icons[i]}</span>
+        <span class="text-xs font-bold text-${s.color}-600">${s.label}情境</span>
+      </div>
+      <div class="space-y-1.5 text-xs">
+        <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400 mb-0.5">觸發條件</p><p class="text-slate-700 font-medium">${s.trigger}</p></div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <div class="bg-${s.color}-50 rounded-lg p-2 text-center"><p class="text-slate-400 mb-0.5">EPS 預估</p><p class="font-bold text-${s.color}-700 tabular-nums">${s.eps}</p></div>
+          <div class="bg-${s.color}-50 rounded-lg p-2 text-center"><p class="text-slate-400 mb-0.5">目標價</p><p class="font-bold text-${s.color}-700 tabular-nums">${s.target}</p></div>
+        </div>
+        <div class="bg-slate-50 rounded-lg p-2"><p class="text-slate-400 mb-0.5">潛在漲跌幅</p><p class="font-bold tabular-nums text-${s.color}-700">${s.upside}</p></div>
+        <p class="text-slate-500 leading-relaxed">${s.note}</p>
+      </div>`,`border-${s.color}-200`);
+  }).join('');
+
+  // 升息兩碼情境模擬（台股特有）
+  const rateImpact = card(`
+    <p class="text-xs font-bold text-slate-600 mb-3">🏦 升息兩碼情境模擬（台灣視角）</p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+      <div class="bg-blue-50 rounded-lg p-2.5">
+        <p class="font-bold text-blue-700 mb-1">科技股（${d.co||'本標的'}）</p>
+        <p class="text-slate-600">升息→無風險利率↑→DCF折現率↑→高本益比壓縮；短期承壓，長線看基本面</p>
+      </div>
+      <div class="bg-emerald-50 rounded-lg p-2.5">
+        <p class="font-bold text-emerald-700 mb-1">金融股（受益）</p>
+        <p class="text-slate-600">淨利差擴大，存款與放款利差改善，壽險投資收益提升</p>
+      </div>
+      <div class="bg-amber-50 rounded-lg p-2.5">
+        <p class="font-bold text-amber-700 mb-1">房地產/都更概念</p>
+        <p class="text-slate-600">建融成本↑，開發商IRR下降；但都更案因持有成本低，相對受益有限</p>
+      </div>
+    </div>`);
+
+  return `<div class="max-w-3xl space-y-3">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-sm font-bold text-slate-700">📐 三情境分析</span>
+      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">策展觀點 · 非即時</span>
+      ${r?`<span class="text-xs text-slate-400">現價 ${curPrice}</span>`:''}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">${scenarioCards}</div>
+    ${rateImpact}
+    <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 情境分析為假設性推演，非投資建議。實際結果受多重不可預測因素影響。</p>
+  </div>`;
+}
+
 // ─── TERMINAL ANIMATION ──────────────────────────────────
 function addLine(text,color,delay){
   setTimeout(()=>{
@@ -818,7 +981,7 @@ async function callAI(ticker,today,real){
       max_tokens:1500,
       temperature:0,
       system:`你是頂尖機構投資分析師。今天是${today}。嚴格只回傳一個 JSON 物件（不要 markdown、不要任何多餘文字），所有欄位皆為「扁平」結構，鍵名與型別必須完全如下：
-{"co":"公司中文名","score":整數0-100,"trend":"S或W","rev":"5年營收趨勢","ni":"淨利趨勢","fcf":"FCF狀況","margin":"利潤率趨勢","debt":"債務水平","hsum":"財務總結30字內","pe":"目前P/E","ipe":"同業P/E","dcf":"DCF合理價含單位","cur":"當前股價含單位","verd":"U或O或F","verdz":"低估或高估或合理","vsum":"估值總結","mkt":"目標市場規模","rate":"產業增長率","ai":"AI技術優勢","y5":"5年展望","y10":"10年展望","gsum":"成長總結","bull":["多頭1","多頭2","多頭3"],"bear":["空頭1","空頭2","空頭3"],"bal":"平衡結論","act":"BUY或HOLD或AVOID","actz":"買入或持有或避開","st":"短期展望","lt":"長期展望","cat":["催化劑1","催化劑2","催化劑3"],"risk":["風險1","風險2","風險3"],"why":"建議理由25字內"}`,
+{"co":"公司中文名","score":整數0-100,"trend":"S或W","rev":"5年營收趨勢","ni":"淨利趨勢","fcf":"FCF狀況","margin":"利潤率趨勢","debt":"債務水平","hsum":"財務總結30字內","pe":"目前P/E","ipe":"同業P/E","dcf":"DCF合理價含單位","cur":"當前股價含單位","verd":"U或O或F","verdz":"低估或高估或合理","vsum":"估值總結","mkt":"目標市場規模","rate":"產業增長率","ai":"AI技術優勢","y5":"5年展望","y10":"10年展望","gsum":"成長總結","bull":["多頭1","多頭2","多頭3"],"bear":["空頭1","空頭2","空頭3"],"bal":"平衡結論","act":"BUY或HOLD或AVOID","actz":"買入或持有或避開","st":"短期展望","lt":"長期展望","cat":["催化劑1","催化劑2","催化劑3"],"risk":["風險1","風險2","風險3"],"why":"建議理由25字內","sc":{"best":{"label":"樂觀","color":"emerald","trigger":"觸發條件","eps":"EPS預估","target":"目標價","upside":"上行幅度","note":"說明"},"base":{"label":"基準","color":"blue","trigger":"觸發條件","eps":"EPS預估","target":"目標價","upside":"上行幅度","note":"說明"},"worst":{"label":"悲觀","color":"red","trigger":"觸發條件","eps":"EPS預估","target":"目標價","upside":"下行幅度","note":"說明"}}}`,
       messages:[{role:'user',content:`分析股票：${ticker}。${ctx}`}]
     })
   });
@@ -848,7 +1011,7 @@ async function run(){
   document.getElementById('runBtn').disabled=true;
 
   [
-    {t:`> [${timeStr}] 初始化分析引擎 v5.0`,c:'#4ade80',d:40},
+    {t:`> [${timeStr}] 初始化分析引擎 v6.0`,c:'#4ade80',d:40},
     {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:140},
     {t:`> [FETCH] 連線 FinMind 抓取日收盤財報數據...`,c:'#4ade80',d:260},
     {t:`> [${useAI?'AI':'DB'}] ${useAI?'串接 Claude 生成質化分析...':'載入策展資料庫質化分析...'}`,c:useAI?'#a78bfa':'#94a3b8',d:420},
@@ -949,22 +1112,32 @@ function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); pfRecompute(); }
 
 // 側欄模式切換
 function setMode(m){
-  appMode=m; const stock=m==='stock';
-  document.getElementById('modeStock').className='text-xs font-bold py-1.5 rounded-md transition-colors '+(stock?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
-  document.getElementById('modePortfolio').className='text-xs font-bold py-1.5 rounded-md transition-colors '+(!stock?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
-  document.getElementById('stockControls').classList.toggle('hidden',!stock);
-  document.getElementById('portfolio').classList.toggle('hidden',stock);
-  if(stock){
+  appMode=m;
+  const mBtns={stock:'modeStock',portfolio:'modePortfolio',calc:'modeCalc'};
+  Object.entries(mBtns).forEach(([k,id])=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.className='text-xs font-bold py-1.5 rounded-md transition-colors '+(k===m?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
+  });
+  document.getElementById('stockControls').classList.toggle('hidden', m!=='stock');
+  document.getElementById('portfolio').classList.toggle('hidden', m!=='portfolio');
+  document.getElementById('calcPanel').classList.toggle('hidden', m!=='calc');
+  if(m==='stock'){
     document.getElementById('welcome').classList.toggle('hidden', !!curData);
     document.getElementById('results').classList.toggle('hidden', !curData);
     document.getElementById('results').classList.toggle('flex', !!curData);
-    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v5.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 五層次深度分析'; }
+    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v6.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
   } else {
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('results').classList.add('hidden'); document.getElementById('results').classList.remove('flex');
-    document.getElementById('hTitle').textContent='📁 個人資產分析 · 核心-衛星雙軌制';
-    document.getElementById('hSub').textContent='資料只存本機瀏覽器 ｜ 報價來源 FinMind 日收盤';
-    renderPortfolio();
+    if(m==='portfolio'){
+      document.getElementById('hTitle').textContent='📁 個人資產分析 · 核心-衛星雙軌制';
+      document.getElementById('hSub').textContent='資料只存本機瀏覽器 ｜ 報價來源 FinMind 日收盤';
+      renderPortfolio();
+    } else {
+      document.getElementById('hTitle').textContent='🧮 投資計算器';
+      document.getElementById('hSub').textContent='複利試算・定存試算・定期定額試算';
+      renderCalc();
+    }
   }
   toggleSidebar(false);
 }
@@ -1183,6 +1356,173 @@ async function pfAI(){
     const txt=j.content.filter(b=>b.type==='text').map(b=>b.text).join('');
     box.innerHTML=`<div class="text-xs text-slate-700 whitespace-pre-wrap leading-relaxed">${txt.replace(/[<>]/g,m=>m==='<'?'&lt;':'&gt;')}</div>`;
   }catch(e){ box.innerHTML=`<p class="text-xs text-red-500">AI 健診失敗：${e.message}</p>`; }
+}
+
+// ═══ 投資計算器 ══════════════════════════════════════════
+let calcChartCompound=null, calcChartDCA=null;
+
+function renderCalc(){
+  const el=document.getElementById('calcPanel'); if(!el) return;
+  el.innerHTML=`<div class="max-w-4xl mx-auto space-y-4">
+    <div class="flex items-center gap-3 flex-wrap">
+      <p class="text-base font-bold text-slate-800">🧮 投資計算器</p>
+      <span class="text-xs text-slate-400">複利・定存・定期定額三合一試算工具</span>
+    </div>
+
+    <!-- 複利試算 -->
+    <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+      <p class="text-sm font-bold text-slate-700 mb-3">📈 複利試算（一次性投入）</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div><label class="text-xs text-slate-400 block mb-1">初始本金（元）</label>
+          <input id="c_principal" type="number" value="100000" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div><label class="text-xs text-slate-400 block mb-1">年化報酬率（%）</label>
+          <input id="c_rate" type="number" value="8" step="0.1" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div><label class="text-xs text-slate-400 block mb-1">投資年數</label>
+          <input id="c_years" type="number" value="20" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div class="flex items-end">
+          <button onclick="calcCompound()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 rounded-lg">計算</button>
+        </div>
+      </div>
+      <div id="c_result" class="hidden grid grid-cols-3 gap-3">
+        <div class="bg-blue-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">最終資產</p><p id="c_final" class="text-xl font-bold text-blue-700 tabular-nums"></p></div>
+        <div class="bg-emerald-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">利息收益</p><p id="c_interest" class="text-xl font-bold text-emerald-600 tabular-nums"></p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">報酬率倍數</p><p id="c_multi" class="text-xl font-bold text-slate-700 tabular-nums"></p></div>
+      </div>
+      <div style="position:relative;height:220px;width:100%"><canvas id="cvCompound"></canvas></div>
+    </div>
+
+    <!-- 定期定額試算 -->
+    <div class="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+      <p class="text-sm font-bold text-slate-700 mb-3">📅 定期定額試算（月定投）</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div><label class="text-xs text-slate-400 block mb-1">每月投入（元）</label>
+          <input id="d_monthly" type="number" value="10000" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div><label class="text-xs text-slate-400 block mb-1">年化報酬率（%）</label>
+          <input id="d_rate" type="number" value="8" step="0.1" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div><label class="text-xs text-slate-400 block mb-1">投資年數</label>
+          <input id="d_years" type="number" value="20" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+        <div class="flex items-end">
+          <button onclick="calcDCA()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 rounded-lg">計算</button>
+        </div>
+      </div>
+      <div id="d_result" class="hidden grid grid-cols-3 gap-3">
+        <div class="bg-blue-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">最終資產</p><p id="d_final" class="text-xl font-bold text-blue-700 tabular-nums"></p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">累計投入</p><p id="d_invested" class="text-xl font-bold text-slate-600 tabular-nums"></p></div>
+        <div class="bg-emerald-50 rounded-xl p-3 text-center"><p class="text-xs text-slate-400 mb-1">投資收益</p><p id="d_gains" class="text-xl font-bold text-emerald-600 tabular-nums"></p></div>
+      </div>
+      <div style="position:relative;height:220px;width:100%"><canvas id="cvDCA"></canvas></div>
+    </div>
+
+    <!-- 72法則 + 台灣定存試算 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <p class="text-sm font-bold text-slate-700 mb-3">⚡ 72法則（翻倍所需年數）</p>
+        <div class="flex gap-2 mb-3">
+          <div class="flex-1"><label class="text-xs text-slate-400 block mb-1">年報酬率（%）</label>
+            <input id="r72" type="number" value="8" step="0.1" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400" oninput="calc72()"></div>
+        </div>
+        <div class="bg-purple-50 rounded-xl p-4 text-center">
+          <p class="text-xs text-slate-400 mb-1">資產翻倍需要</p>
+          <p id="r72result" class="text-3xl font-bold text-purple-700 tabular-nums">9.0 年</p>
+        </div>
+        <div class="mt-3 space-y-1 text-xs text-slate-500">
+          <div class="flex justify-between"><span>台灣定存 ~1.5%</span><span class="font-bold">48.0 年</span></div>
+          <div class="flex justify-between"><span>台股大盤 ~10%</span><span class="font-bold">7.2 年</span></div>
+          <div class="flex justify-between"><span>標普 500 ~11%</span><span class="font-bold">6.5 年</span></div>
+        </div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <p class="text-sm font-bold text-slate-700 mb-3">🏦 台灣定存試算</p>
+        <div class="space-y-2">
+          <div><label class="text-xs text-slate-400 block mb-1">存入金額（元）</label>
+            <input id="td_amt" type="number" value="500000" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+          <div><label class="text-xs text-slate-400 block mb-1">年利率（%，目前約 1.5–2.0%）</label>
+            <input id="td_rate" type="number" value="1.65" step="0.05" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+          <div><label class="text-xs text-slate-400 block mb-1">存款期間（月）</label>
+            <input id="td_months" type="number" value="12" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400"></div>
+          <button onclick="calcTD()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 rounded-lg">計算</button>
+          <div id="td_result" class="hidden bg-emerald-50 rounded-xl p-3 grid grid-cols-2 gap-2 text-center">
+            <div><p class="text-xs text-slate-400 mb-0.5">到期金額</p><p id="td_final" class="font-bold text-emerald-700 tabular-nums"></p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">利息收益</p><p id="td_int" class="font-bold text-emerald-700 tabular-nums"></p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 計算結果為試算參考，不構成投資建議。實際報酬受市場波動影響。</p>
+  </div>`;
+  calcCompound(); calcDCA(); calc72();
+}
+
+function fmtNum(n){ return Math.round(n).toLocaleString('zh-TW'); }
+
+function calcCompound(){
+  const P=Number(document.getElementById('c_principal')?.value)||100000;
+  const r=Number(document.getElementById('c_rate')?.value)/100||0.08;
+  const y=Number(document.getElementById('c_years')?.value)||20;
+  const final=P*Math.pow(1+r,y), interest=final-P;
+  const res=document.getElementById('c_result'); if(res) res.classList.remove('hidden');
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('c_final','NT$'+fmtNum(final));
+  set('c_interest','NT$'+fmtNum(interest));
+  set('c_multi',(final/P).toFixed(2)+'x');
+  // Chart
+  const el=document.getElementById('cvCompound'); if(!el) return;
+  if(calcChartCompound) calcChartCompound.destroy();
+  const labels=[], principal=[], total=[];
+  for(let i=0;i<=y;i++){ labels.push(i+'年'); principal.push(Math.round(P)); total.push(Math.round(P*Math.pow(1+r,i))); }
+  calcChartCompound=new Chart(el.getContext('2d'),{type:'line',
+    data:{labels,datasets:[
+      {label:'本金',data:principal,borderColor:'#cbd5e1',borderWidth:1.5,pointRadius:0,fill:false},
+      {label:'含複利',data:total,borderColor:'#3b82f6',borderWidth:2,pointRadius:0,backgroundColor:'rgba(59,130,246,0.1)',fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{position:'right',ticks:{callback:v=>'NT$'+fmtNum(v),font:{size:9}}}}}});
+}
+
+function calcDCA(){
+  const monthly=Number(document.getElementById('d_monthly')?.value)||10000;
+  const r=Number(document.getElementById('d_rate')?.value)/100/12||0.08/12;
+  const y=Number(document.getElementById('d_years')?.value)||20;
+  const n=y*12;
+  const final=monthly*(Math.pow(1+r,n)-1)/r*(1+r);
+  const invested=monthly*n;
+  const res=document.getElementById('d_result'); if(res) res.classList.remove('hidden');
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('d_final','NT$'+fmtNum(final));
+  set('d_invested','NT$'+fmtNum(invested));
+  set('d_gains','NT$'+fmtNum(final-invested));
+  const el=document.getElementById('cvDCA'); if(!el) return;
+  if(calcChartDCA) calcChartDCA.destroy();
+  const labels=[], inv=[], tot=[];
+  for(let m=0;m<=n;m+=Math.max(1,Math.floor(n/40))){
+    const fv=m===0?0:monthly*(Math.pow(1+r,m)-1)/r*(1+r);
+    labels.push(Math.floor(m/12)+'年'); inv.push(Math.round(monthly*m)); tot.push(Math.round(fv));
+  }
+  calcChartDCA=new Chart(el.getContext('2d'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'累計投入',data:inv,backgroundColor:'rgba(203,213,225,0.7)'},
+      {label:'累計獲益',data:tot.map((v,i)=>Math.max(0,v-inv[i])),backgroundColor:'rgba(16,185,129,0.6)',stack:'s'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{boxWidth:10,font:{size:10}}}},
+      scales:{x:{stacked:true,ticks:{maxTicksLimit:8,font:{size:9}}},y:{stacked:false,position:'right',ticks:{callback:v=>'NT$'+fmtNum(v),font:{size:9}}}}}});
+}
+
+function calc72(){
+  const r=Number(document.getElementById('r72')?.value)||8;
+  const el=document.getElementById('r72result'); if(el) el.textContent=(72/r).toFixed(1)+' 年';
+}
+
+function calcTD(){
+  const amt=Number(document.getElementById('td_amt')?.value)||500000;
+  const rate=Number(document.getElementById('td_rate')?.value)/100||0.0165;
+  const months=Number(document.getElementById('td_months')?.value)||12;
+  const interest=amt*rate*(months/12);
+  const final=amt+interest;
+  const res=document.getElementById('td_result'); if(res) res.classList.remove('hidden');
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('td_final','NT$'+fmtNum(final));
+  set('td_int','NT$'+fmtNum(interest)+` (稅後約NT$${fmtNum(interest*0.8)})`);
 }
 
 pfLoad(); // 啟動載入本機組合
