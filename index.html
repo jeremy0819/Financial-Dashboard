@@ -49,15 +49,6 @@
         <div id="qp" class="space-y-1"></div>
       </div>
     </div>
-    <div id="apiKeySection">
-      <div class="flex items-center justify-between mb-1">
-        <p class="text-xs text-slate-400">Anthropic API Key</p>
-        <span id="apiStatus" class="text-xs text-slate-600 font-mono">質化分析：DB</span>
-      </div>
-      <input id="apiKey" type="password" placeholder="sk-ant-..." onchange="checkApiKey()"
-        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs font-mono focus:outline-none focus:border-emerald-500">
-      <p class="text-xs text-slate-600 mt-1">選填：個股由 Claude 生成六層；個人資產可生成配置健診</p>
-    </div>
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
     <p>數據來源：FinMind（日收盤）</p>
@@ -1022,8 +1013,8 @@ async function run(){
   const now=new Date();
   const timeStr=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const dateStr=document.getElementById('cDate').textContent;
-  const useAI=isAIReady();
-  const cacheKey=`${ticker}|${useAI?'ai':'db'}`;
+  const useAI=false;
+  const cacheKey=`${ticker}|db`;
 
   document.getElementById('term').innerHTML='';
   document.getElementById('loader').classList.remove('hidden');
@@ -1036,7 +1027,7 @@ async function run(){
     {t:`> [${timeStr}] 初始化分析引擎 v6.0`,c:'#4ade80',d:40},
     {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:140},
     {t:`> [FETCH] 連線 FinMind 抓取日收盤財報數據...`,c:'#4ade80',d:260},
-    {t:`> [${useAI?'AI':'DB'}] ${useAI?'串接 Claude 生成質化分析...':'載入策展資料庫質化分析...'}`,c:useAI?'#a78bfa':'#94a3b8',d:420},
+    {t:`> [DB] 載入策展資料庫質化分析...`,c:'#94a3b8',d:420},
     {t:`> [MODEL] 計算技術均線與估值訊號...`,c:'#60a5fa',d:560},
     {t:`> [SIGNAL] 彙整即時數據訊號...`,c:'#f472b6',d:680},
   ].forEach(l=>addLine(l.t,l.c,l.d));
@@ -1276,13 +1267,8 @@ function renderPortfolio(){
         <th class="px-1.5 py-1 text-right font-medium">損益</th><th class="px-1 py-1"></th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
       <p class="text-[11px] text-slate-400 mt-2">💡 <b>股數</b>＝你持有的股數；<b>成本/股</b>＝每股平均買入價（用於計算損益，只想看配置可留空）。現價／市值／權重／損益由系統依報價自動計算。</p>`)}
-    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📋 配置健診（依雙軌制紀律 · 免金鑰）</p>
-      <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>
-      <div class="border-t border-slate-100 mt-3 pt-3">
-        <div class="flex items-center justify-between mb-2"><p class="text-xs font-bold text-slate-600">🤖 AI 深入建議（選填）</p>
-          <button onclick="pfAI()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">產生 AI 建議</button></div>
-        <div id="pfAiBox"><p class="text-xs text-slate-400">上方健診免金鑰即可使用；如需 Claude 進一步質化建議，於左側填入 API Key 再按此鈕（非必要）。</p></div>
-      </div>`)}
+    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📋 配置健診（依雙軌制紀律）</p>
+      <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>`)}
     <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 本工具為個人紀律輔助，數據來自第三方 API，不構成投資建議。</p>
   </div>`;
   drawPortfolio(c);
