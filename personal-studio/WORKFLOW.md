@@ -1,6 +1,7 @@
 # 個人工作室 — Workflow
 
-> 怎麼把六位 agent + 一支 skill + 雙身分查核，串成每天真的會跑的流程。
+> 怎麼把部門 agent + 調度 skill + 雙身分查核，串成每天真的會跑的流程。
+> 主理人非技術背景，所有步驟都拆到最細。
 
 ---
 
@@ -18,53 +19,53 @@
      會重複/要算數/存資料                    一次性/主觀/即時對話
               │                                     │
               ▼                                     ▼
-     派給對應施工 agent                      留在 Project 對話
-   ┌──────────┼──────────┐                  ┌────────┴────────┐
-   ▼          ▼          ▼                  ▼                 ▼
-urban-     finance-   learning-          週/月 Review      決策日誌
-renewal    tracker    coach              (auditor)        (第一性原理)
-analyst                taste-curator
-   │          │          │
-   └──────────┴──────────┘
-              │
+     派給對應部門 agent                      留在對話陪練（不建檔）
+   ┌──────────┴──────────┐
+   ▼                     ▼
+evaluation-          document-
+analyst              specialist
+(評估部·RE-DCF)      (文件部·說明書/合約/週報)
+   │                     │
+   └──────────┬──────────┘
+              │  （翻譯/內容創作先用 skill；要新能力才走行政部招募）
               ▼
-        建成單一 HTML 工具
-        （localStorage + validate）
+     交付：Streamlit 工具更新 / 文件
+     ＋ 一條履歷句型
 ```
 
 ---
 
 ## 日常迴圈（每天）
 
-1. **開場找指導者** — 一句「下一步該做什麼」召喚 `mentor`，它對照建造順序給你今天的一步。
-2. **做事走調度** — 有具體任務就丟給 `/personal-studio`，它判工具/框架後派工。
-3. **工具類交施工 agent**，框架類自己在對話練。
+1. **開場找指導者** — 一句「下一步該做什麼」召喚 `mentor`，它對照「下一步行動」給你今天的一步，並提醒哪個現有員工能用。
+2. **做事走調度** — 有具體任務丟給 `/personal-studio`，它判工具/框架後派工。
+3. **工具類交部門 agent**（評估部 / 文件部），框架類自己在對話練。
+4. **先用現有員工** — 動手前先確認現有 skill / agent 能不能解，不要急著裝新工具。
 
 ## 週迴圈（每週固定一次）
 
 1. 跑 `/personal-studio 週查核` → 召喚 `auditor`。
-2. `auditor` 讀本週 git log + 各追蹤器狀態，逐項回報「承諾 vs 達成 + 落差」。
-3. **不要在這一輪找指導者。** 先讓自己照完鏡子。
+2. `auditor` 讀本週 git log（RE-DCF-Tool / jieceng-web）+ 對照 CLAUDE.md 的「下一步行動」與「履歷成果」，逐項回報「承諾 vs 達成 + 落差」。
+3. **這一輪不要找指導者。** 先讓自己照完鏡子。
 4. 照完鏡子後，再開新一輪找 `mentor` 規劃下週修正——兩個身分分開。
 
 ## 月迴圈
 
-- `auditor` 做月度對帳：財務進度曲線 vs 目標線、職涯里程碑落後天數、學習複習完成率。
-- 回頭更新 `CLAUDE.md` 第 8 節進度備註打勾。
+- `auditor` 做月度對帳：Tier 學習進度、各部門落地狀態、履歷成果新增幾條。
+- 回頭更新 CLAUDE.md 第 10 節「下一步行動」打勾、第 9 節「履歷成果」補句。
 
 ---
 
-## 建造順序（再貼一次，照著走）
+## 建造順序（對齊 CLAUDE.md 的「下一步行動」）
 
-| 階段 | 交付 | agent | 為什麼是這個順序 |
+| 順序 | 交付 | 負責 | 為什麼是這個順序 |
 |---|---|---|---|
-| 第 0 步（3 天） | Financial Dashboard 加財務目標模式 | `finance-tracker` | 現成基礎設施，零學習曲線，先嘗到甜頭 |
-| 第 1 個月 | 容積查核工具 | `urban-renewal-analyst` | 規則明確、天天用、出錯看得出來 → 建立信心 |
-| 第 2 個月 | 財務儀表板 + 職涯里程碑 | `finance-tracker` | 資料簡單、激勵性強 |
-| 第 3 個月 | 可行性快篩器 | `urban-renewal-analyst` | 整合前面學的 |
-| 持續 | 框架類（Review / 決策 / 品味） | Project + `auditor` + `taste-curator` | 即時開始，不用等工具 |
+| ① | RE-DCF-Tool v3.1 推上 GitHub | `evaluation-analyst` | 已完成本機版，先把成果保存上雲 |
+| ② | 安裝 Claude Desktop（Tier 1 起點） | `mentor` 帶你一步步裝 | 打通 MCP，解鎖更多員工 |
+| ③ | 文件部「地主說明書自動生成」 | `document-specialist` | 第一個文件部落地案例，重複性高、省最多時間 |
+| ④ | 研究 baoyu-translate 安裝 | 行政部（人資） | 翻譯部要用到，先把員工招進來 |
 
-> 為什麼第 0 步插在第 1 個月前？因為延伸現有 Financial Dashboard 幾乎零成本，3 天內就能看到「35 歲存千萬」的進度曲線——這個即時激勵會讓你帶著好狀態進第 1 個月的容積工具。
+> 招募紀律：每一步都先問「現有員工夠不夠」。真的不夠，才用 `npx skills find`（人資）找新 skill 或 skill-creator（訓練主管）自己包。
 
 ---
 
@@ -72,18 +73,19 @@ analyst                taste-curator
 
 1. **先過分流閘門。** 每個任務先問「工具還是框架」，不確定就傾向框架。
 2. **兩個身分不混。** 指導者推你前進，查核者讓你面對現實——永遠分開召喚。
-3. **品味要自己練。** `taste-curator` 只管庫存，美學判斷一律自己下筆。
+3. **先用現有員工，再招募新員工。** 別為了用新工具而用新工具。
 
 ---
 
 ## 召喚速查
 
-| 我想… | 指令 |
+| 我想… | 指令 / 動作 |
 |---|---|
 | 知道下一步 | 對話問「下一步」→ `mentor` |
 | 丟一個新任務 | `/personal-studio` |
 | 週查核 | `/personal-studio 週查核` → `auditor` |
-| 做都更計算工具 | `/personal-studio` 描述 → `urban-renewal-analyst` |
-| 做財務/職涯追蹤 | `/personal-studio` 描述 → `finance-tracker` |
-| 學習進度/測驗 | `/personal-studio` 描述 → `learning-coach` |
-| 整理案例庫 | `/personal-studio` 描述 → `taste-curator` |
+| 容積 / 坪效 / 開發評效 / 法規 | `/personal-studio` 描述 → `evaluation-analyst` |
+| 地主說明書 / 合約 / 週報 / 建照查核 | `/personal-studio` 描述 → `document-specialist` |
+| 翻外國規範 | 用 baoyu-translate + taiwan-traditional-chinese skill |
+| 簡報 / 官網文案 / 社群貼文 | 用 baoyu 內容創作系列 skill |
+| 找新 skill | 行政部：`npx skills find` |
