@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI 財務健檢系統 v6.0 | 台灣投資理財</title>
+<title>AI 財務健檢系統 v7.0 | 台灣投資理財</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,7 +19,7 @@
 <aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v6.0</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v7.0</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
     <!-- 模式切換 -->
@@ -52,7 +52,7 @@
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
     <p>數據來源：FinMind（日收盤）</p>
-    <p class="mt-0.5">Architecture meets Finance v6.0</p>
+    <p class="mt-0.5">Architecture meets Finance v7.0</p>
     <p class="mt-1 text-slate-600">⚠️ 僅供參考，非投資建議</p>
   </div>
 </aside>
@@ -64,7 +64,7 @@
   <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
     <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
     <div class="min-w-0">
-      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v6.0</p>
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v7.0</p>
       <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 六層次深度分析</p>
     </div>
   </header>
@@ -85,7 +85,7 @@
   <!-- Welcome -->
   <div id="welcome" class="flex-1 flex flex-col items-center justify-center text-center p-8">
     <p class="text-5xl mb-3">📊</p>
-    <p class="text-base font-bold text-slate-500 mb-1">AI 財務分析系統 v6.0 待命中</p>
+    <p class="text-base font-bold text-slate-500 mb-1">AI 財務分析系統 v7.0 待命中</p>
     <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 六層次深度分析 + 情境試算</p>
     <div class="flex gap-2 flex-wrap justify-center mb-4">
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🏥</p><p class="text-xs text-slate-500 mt-0.5">財務健檢</p></div>
@@ -105,6 +105,7 @@
   <!-- Results -->
   <div id="results" class="hidden flex-1 flex flex-col overflow-hidden">
     <div id="freshBar" class="bg-slate-50 border-b border-slate-200 px-5 py-1.5 flex items-center gap-2 text-xs text-slate-500 shrink-0 flex-wrap"></div>
+    <div id="mktTempBar" class="hidden bg-white border-b border-slate-100 px-5 py-2 flex items-center gap-3 shrink-0 overflow-x-auto ns"></div>
     <div id="glanceBar" class="grid grid-cols-3 sm:grid-cols-6 gap-px bg-slate-200 border-b border-slate-200 shrink-0"></div>
     <div id="tabBar" class="bg-white border-b border-slate-200 px-4 flex gap-0.5 shrink-0 overflow-x-auto ns"></div>
     <div id="tabContent" class="flex-1 overflow-y-auto p-5 ns"></div>
@@ -131,7 +132,7 @@ setInterval(tick,1000); tick();
 // ─── CONFIG ──────────────────────────────────────────────
 const FM='https://api.finmindtrade.com/api/v4/data';   // FinMind：CORS開放、免金鑰
 const MODEL='claude-sonnet-4-20250514';                // 如需更新模型改這裡
-const VERSION='v6.0';
+const VERSION='v7.0';
 const PROXY_URL=null; // wire-proxy.sh 會把 null 換成你的 Worker URL（字串）
 const cache={};                                        // 結果快取（key = ticker|mode），確保一致性
 
@@ -574,8 +575,22 @@ function metaRow(icon,label,val){
 }
 function pct(v){ return v==null?'—':(v>=0?'+':'')+v.toFixed(1)+'%'; }
 function fmtDate(s){ return s?s.slice(5):''; }                       // YYYY-MM-DD → MM-DD
-function dataBadge(date){ return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 ml-1">日收盤${date?' '+fmtDate(date):''}</span>`; }
-function staticBadge(src){ const t=src==='ai'?'AI 觀點':'策展觀點 · 非即時'; return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-500 ml-1">${t}</span>`; }
+// ─── V7.0 判斷來源標籤（三分流）───────────────────────────
+// 🧠 框架判斷 = 六步驟/核心衛星規則自動計算（作者方法論）
+// 📊 即時數據 = FinMind 客觀數字（附資料日期）
+// 🤖 AI 生成  = Claude API 生成（目前停用，預留）
+function srcBadge(type, date){
+  const cfg={
+    framework:{icon:'🧠',label:'框架判斷',bg:'bg-blue-100',tc:'text-blue-700'},
+    data:{icon:'📊',label:'即時數據',bg:'bg-sky-100',tc:'text-sky-700'},
+    ai:{icon:'🤖',label:'AI 生成',bg:'bg-purple-100',tc:'text-purple-700'}
+  };
+  const c=cfg[type]||cfg.framework;
+  const ds=date?` · ${fmtDate(date)}`:'';
+  return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.bg} ${c.tc} ml-1 inline-flex items-center gap-0.5 shrink-0">${c.icon} ${c.label}${ds}</span>`;
+}
+function dataBadge(date){ return srcBadge('data', date); }
+function staticBadge(src){ return srcBadge(src==='ai'?'ai':'framework'); }
 // 台股慣例 紅漲綠跌：正→紅(rose) 負→綠(emerald)
 function upCls(v){ return v==null?'text-slate-800':v>0?'text-rose-600':v<0?'text-emerald-600':'text-slate-500'; }
 function toneCls(t){ return t==='good'?'bg-emerald-50 border-emerald-200 text-emerald-700':t==='bad'?'bg-rose-50 border-rose-200 text-rose-700':'bg-amber-50 border-amber-200 text-amber-700'; }
@@ -617,7 +632,7 @@ function tabHealth(d){
     ${revCard}
     ${chipCard}
     <div class="flex items-center gap-2 flex-wrap pt-1">
-      <span class="text-sm font-bold text-slate-700">財務評分與摘要</span>${staticBadge(d._src)}
+      <span class="text-sm font-bold text-slate-700">財務評分與摘要</span>${srcBadge('framework')}
     </div>
     ${card(`
       <div class="flex justify-between items-center mb-2">
@@ -657,7 +672,7 @@ function tabValuation(d){
   return `<div class="max-w-2xl space-y-3">
     ${realBlock}
     ${divBlock}
-    <div class="flex items-center gap-2 flex-wrap pt-1"><span class="text-sm font-bold text-slate-700">策展估值觀點</span>${staticBadge(d._src)}</div>
+    <div class="flex items-center gap-2 flex-wrap pt-1"><span class="text-sm font-bold text-slate-700">估值觀點</span>${srcBadge('framework')}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">同業平均 P/E</p><p class="text-lg font-bold text-slate-800">${d.ipe}</p>`,'border-dashed')}
       ${card(`<p class="text-xs text-slate-400 mb-1">策展估值結論</p><p class="text-lg font-bold text-${d.verd==='U'?'emerald':d.verd==='O'?'rose':'amber'}-600">${d.verdz}</p>`,'border-dashed')}
@@ -677,7 +692,7 @@ function tabValuation(d){
 
 function tabGrowth(d){
   return `<div class="max-w-2xl space-y-3">
-    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">成長潛力分析</span>${staticBadge(d._src)}</div>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">成長潛力分析</span>${srcBadge('framework')}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">🌍 目標市場規模</p><p class="text-base font-bold text-slate-800">${d.mkt}</p>`)}
       ${card(`<p class="text-xs text-slate-400 mb-1">📈 產業年增率</p><p class="text-base font-bold text-emerald-600">${d.rate}</p>`)}
@@ -697,7 +712,7 @@ function tabGrowth(d){
 function tabDebate(d){
   const pts=(arr,col)=>arr.map(p=>`<div class="flex gap-2 mb-2 text-xs"><span class="font-bold ${col} shrink-0">${col.includes('emerald')?'+':'−'}</span><span class="text-slate-700">${p}</span></div>`).join('');
   return `<div class="max-w-2xl space-y-3">
-    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">多空分析師辯論</span>${staticBadge(d._src)}</div>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">多空分析師辯論</span>${srcBadge('framework')}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card('<p class="text-xs font-bold text-emerald-700 mb-3">🐂 多頭分析師</p>'+pts(d.bull,'text-emerald-600'))}
       ${card('<p class="text-xs font-bold text-red-700 mb-3">🐻 空頭分析師</p>'+pts(d.bear,'text-red-500'))}
@@ -711,7 +726,7 @@ function tabDecision(d){
   const c=cfg[d.act]||cfg.HOLD;
   const li=(arr,col)=>arr.map(x=>`<div class="flex gap-2 mb-1.5 text-xs"><span class="${col}">▶</span><span class="text-slate-700">${x}</span></div>`).join('');
   return `<div class="max-w-2xl space-y-3">
-    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">投資決策</span>${staticBadge(d._src)}</div>
+    <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">投資決策</span>${srcBadge('framework')}</div>
     ${card(`<div class="flex flex-col items-center py-3">
       <div class="flex items-center gap-3 px-8 py-4 rounded-xl ${c.bg} border ${c.border}">
         <span class="text-3xl">${c.e}</span>
@@ -933,7 +948,7 @@ function tabScenario(d){
   return `<div class="max-w-3xl space-y-3">
     <div class="flex items-center gap-2 mb-1">
       <span class="text-sm font-bold text-slate-700">📐 三情境分析</span>
-      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">策展觀點 · 非即時</span>
+      ${srcBadge('framework')}
       ${r?`<span class="text-xs text-slate-400">現價 ${curPrice}</span>`:''}
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">${scenarioCards}</div>
@@ -1024,7 +1039,7 @@ async function run(){
   document.getElementById('runBtn').disabled=true;
 
   [
-    {t:`> [${timeStr}] 初始化分析引擎 v6.0`,c:'#4ade80',d:40},
+    {t:`> [${timeStr}] 初始化分析引擎 v7.0`,c:'#4ade80',d:40},
     {t:`> [DATE] ${dateStr} ｜ 標的: ${ticker}`,c:'#22d3ee',d:140},
     {t:`> [FETCH] 連線 FinMind 抓取日收盤財報數據...`,c:'#4ade80',d:260},
     {t:`> [DB] 載入策展資料庫質化分析...`,c:'#94a3b8',d:420},
@@ -1072,7 +1087,9 @@ function finish(ticker,data){
   document.getElementById('loader').classList.add('hidden');
   document.getElementById('runBtn').disabled=false;
   renderResults(ticker,data);
+  if(data.act) logDecision(ticker, data); // v7.0 自動記錄決策
 }
+
 
 // ═══ 個人資產分析（核心-衛星雙軌制）═══════════════════════════
 // 持股只存在本機 localStorage，不上傳；程式碼僅內建框架範本（股數成本留 0）
@@ -1138,7 +1155,7 @@ function setMode(m){
     document.getElementById('welcome').classList.toggle('hidden', !!curData);
     document.getElementById('results').classList.toggle('hidden', !curData);
     document.getElementById('results').classList.toggle('flex', !!curData);
-    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v6.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
+    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v7.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
   } else {
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('results').classList.add('hidden'); document.getElementById('results').classList.remove('flex');
@@ -1201,6 +1218,8 @@ function pfRules(c){
   const maxSingle=valued.length?Math.max(...valued.map(r=>r.value/g*100)):0;
   const indVals=Object.values(c.byInd), maxInd=indVals.length?Math.max(...indVals)/g*100:0;
   const satVals=c.rows.filter(r=>r.track==='satellite'&&r.value!=null).map(r=>r.value/g*100), maxSat=satVals.length?Math.max(...satVals):0;
+  // 第八條：衛星倉有無破月線未停損（從 satMAStatus 全域狀態讀取）
+  const satBreached = typeof satMAStatus!=='undefined' && Object.values(satMAStatus).some(s=>s&&s.signal==='red');
   return [
     {label:'核心倉 70–80%', pass:corePct>=70&&corePct<=80, txt:corePct.toFixed(1)+'%'},
     {label:'衛星倉 20–30%', pass:satPct>=20&&satPct<=30, txt:satPct.toFixed(1)+'%'},
@@ -1208,7 +1227,8 @@ function pfRules(c){
     {label:'單一個股 < 15%', pass:maxSingle<15, txt:'最大 '+maxSingle.toFixed(1)+'%'},
     {label:'單一產業 < 35%', pass:maxInd<35, txt:'最大 '+maxInd.toFixed(1)+'%'},
     {label:'衛星單檔 < 5%', pass:maxSat<5, txt:'最大 '+maxSat.toFixed(1)+'%'},
-    {label:'衛星總和 < 30%', pass:satPct<30, txt:satPct.toFixed(1)+'%'}
+    {label:'衛星總和 < 30%', pass:satPct<30, txt:satPct.toFixed(1)+'%'},
+    {label:'衛星倉無破月線部位', pass:!satBreached, txt:satBreached?'⚠️ 有破線未停損':'✓ 無'}
   ];
 }
 
@@ -1227,6 +1247,12 @@ function renderPortfolio(){
   }
   const c=pfCompute(), g=c.gross||1;
   const priced=c.rows.some(r=>r.value!=null);
+  const pfTab=typeof pfActiveTab!=='undefined'?pfActiveTab:'holdings';
+  const tabNav=['holdings','stoploss','mkttemp','monthly','sinking','decisions'].map((k,i)=>{
+    const labels=['📊 持股管理','🛑 衛星停損','🌡️ 市場溫度','📅 月度報表','🏦 沉沒基金','📈 決策追蹤'];
+    const active=pfTab===k;
+    return `<button onclick="pfSwitchTab('${k}')" class="px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${active?'border-slate-800 text-slate-800':'border-transparent text-slate-400 hover:text-slate-600'}">${labels[i]}</button>`;
+  }).join('');
   const trackOpt=sel=>['core','satellite','defense'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${TRACKS[k].label}</option>`).join('');
   const rowsHtml=c.rows.map((r,i)=>`<tr class="border-b border-slate-100">
     <td class="px-1.5 py-1"><input value="${r.ticker||''}" onchange="pfEdit(${i},'ticker',this.value);this.value=(PF.holdings[${i}]||{}).ticker||this.value" placeholder="2330.TW 或 2330" title="台股可只打數字(自動補.TW)，美股直接打代號如 NVDA" class="w-20 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs font-mono focus:outline-none focus:border-blue-400"></td>
@@ -1240,20 +1266,14 @@ function renderPortfolio(){
     <td class="px-1.5 py-1 text-right text-xs tabular-nums ${upCls(r.pl)}" id="pfc-pl-${i}">${pfPLstr(r)}</td>
     <td class="px-1 py-1 text-center"><button onclick="pfDel(${i})" class="text-slate-300 hover:text-red-500" title="刪除">✕</button></td>
   </tr>`).join('');
-  el.innerHTML=`<div class="max-w-5xl mx-auto space-y-4">
-    <div class="flex items-center justify-between flex-wrap gap-2">
-      <div><p class="text-base font-bold text-slate-800">📁 個人資產分析 · 核心-衛星雙軌制</p>
-        <p class="text-xs text-slate-400">資料只存本機瀏覽器 ｜ 報價 FinMind 日收盤${priced?'':' ｜ 尚未更新報價'}</p></div>
-      <div class="flex gap-2">
-        <button onclick="pfAdd()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">➕ 新增</button>
-        <button onclick="pfClear()" class="px-3 py-2 bg-white border border-slate-300 text-slate-400 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-500">清空</button>
-        <button id="pfRun" onclick="runPortfolio()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg">🔄 更新報價並分析</button>
-      </div>
-    </div>
+  // 主內容依 pfTab 切換
+  let pfMainContent='';
+  if(pfTab==='holdings'){
+    pfMainContent=`
     <div id="pfSummary" class="grid grid-cols-2 sm:grid-cols-5 gap-2">${pfSummaryHTML(c)}</div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       ${card(`<p class="text-xs font-bold text-slate-600 mb-2">🥧 三軌配置</p><div style="position:relative;height:220px;width:100%"><canvas id="cvPf"></canvas></div>`)}
-      ${card(`<p class="text-xs font-bold text-slate-600 mb-1">📏 雙軌制紀律檢核</p><div id="pfRulesBox">${pfRulesHTML(c)}</div>`)}
+      ${card(`<p class="text-xs font-bold text-slate-600 mb-1">📏 雙軌制紀律檢核 ${srcBadge('framework')}</p><div id="pfRulesBox">${pfRulesHTML(c)}</div>`)}
     </div>
     ${card(`<div class="flex items-center justify-between mb-2">
         <p class="text-xs font-bold text-slate-600">持股明細</p>
@@ -1267,11 +1287,38 @@ function renderPortfolio(){
         <th class="px-1.5 py-1 text-right font-medium">損益</th><th class="px-1 py-1"></th>
       </tr></thead><tbody>${rowsHtml}</tbody></table></div>
       <p class="text-[11px] text-slate-400 mt-2">💡 <b>股數</b>＝你持有的股數；<b>成本/股</b>＝每股平均買入價（用於計算損益，只想看配置可留空）。現價／市值／權重／損益由系統依報價自動計算。</p>`)}
-    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📋 配置健診（依雙軌制紀律）</p>
-      <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>`)}
+    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📋 配置健診（依雙軌制紀律）${srcBadge('framework')}</p>
+      <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>`)}`;
+  } else if(pfTab==='stoploss'){
+    pfMainContent=renderSatStopLoss(c);
+  } else if(pfTab==='mkttemp'){
+    pfMainContent=`<div id="mktTempSection" class="space-y-4"><p class="text-xs text-slate-400">⏳ 正在抓取市場溫度指標...</p></div>`;
+  } else if(pfTab==='monthly'){
+    pfMainContent=renderMonthlyPL();
+  } else if(pfTab==='sinking'){
+    pfMainContent=renderSinkingFund();
+  } else if(pfTab==='decisions'){
+    pfMainContent=renderDecisionLog();
+  }
+
+  el.innerHTML=`<div class="max-w-5xl mx-auto space-y-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div><p class="text-base font-bold text-slate-800">📁 個人資產分析 · 核心-衛星雙軌制</p>
+        <p class="text-xs text-slate-400">資料只存本機瀏覽器 ｜ 報價 FinMind 日收盤${priced?'':' ｜ 尚未更新報價'}</p></div>
+      <div class="flex gap-2">
+        <button onclick="pfAdd()" class="px-3 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">➕ 新增</button>
+        <button onclick="pfClear()" class="px-3 py-2 bg-white border border-slate-300 text-slate-400 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-500">清空</button>
+        <button id="pfRun" onclick="runPortfolio()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg">🔄 更新報價並分析</button>
+      </div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div class="border-b border-slate-100 flex overflow-x-auto ns">${tabNav}</div>
+      <div class="p-4 space-y-4">${pfMainContent}</div>
+    </div>
     <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 本工具為個人紀律輔助，數據來自第三方 API，不構成投資建議。</p>
   </div>`;
-  drawPortfolio(c);
+  if(pfTab==='holdings') drawPortfolio(c);
+  if(pfTab==='mkttemp') fetchAndRenderMarketTemp();
 }
 
 function drawPortfolio(c){
@@ -1328,6 +1375,8 @@ function pfAdviceHTML(c){
   return head+`<ul class="space-y-1.5">`+a.tips.map(t=>`<li class="text-xs text-slate-600 flex gap-1.5"><span class="text-amber-500 shrink-0">▶</span><span>${t}</span></li>`).join('')+`</ul>`;
 }
 function pfPLstr(r){ return r.pl!=null?(r.pl>0?'+':'')+Math.round(r.pl).toLocaleString()+(r.plPct!=null?`<span class="text-[10px]"> (${r.plPct>0?'+':''}${r.plPct.toFixed(1)}%)</span>`:''):'—'; }
+let pfActiveTab='holdings'; // v7.0 portfolio sub-tab state
+function pfSwitchTab(tab){ pfActiveTab=tab; renderPortfolio(); }
 // 只就地更新計算結果（不重建輸入框 → 不重設捲動、不失焦）
 function pfRecompute(){
   if(!PF.holdings.length){ renderPortfolio(); return; }
@@ -1342,7 +1391,7 @@ function pfRecompute(){
   const s=document.getElementById('pfSummary'); if(s) s.innerHTML=pfSummaryHTML(c);
   const rb=document.getElementById('pfRulesBox'); if(rb) rb.innerHTML=pfRulesHTML(c);
   const ab=document.getElementById('pfAdviceBox'); if(ab) ab.innerHTML=pfAdviceHTML(c);
-  drawPortfolio(c);
+  if(pfActiveTab==='holdings') drawPortfolio(c);
 }
 
 // AI 配置健診
@@ -1533,6 +1582,439 @@ function calcTD(){
 }
 
 pfLoad(); // 啟動載入本機組合
+
+// ═══════════════════════════════════════════════════════════
+// v7.0 新增模組
+// ═══════════════════════════════════════════════════════════
+
+// ─── 衛星停損監控 ────────────────────────────────────────
+let satMAStatus={}; // { ticker: { price, ma20, dist, signal } }
+
+function stopLossLight(dist){
+  if(dist==null) return {light:'⚪',label:'資料不足',cls:'text-slate-400',signal:'na'};
+  if(dist>3) return {light:'🟢',label:'安全',cls:'text-emerald-600',signal:'green'};
+  if(dist>-3) return {light:'🟡',label:'警戒區間',cls:'text-amber-600',signal:'yellow'};
+  return {light:'🔴',label:'已破月線 ⚠️',cls:'text-red-600',signal:'red'};
+}
+
+async function fetchSatMA20(ticker){
+  const isTW=/\.TWO?$/.test(ticker);
+  try{
+    let prices;
+    if(isTW){
+      const id=ticker.replace(/\.TWO?$/,'');
+      const data=await fmGet('TaiwanStockPrice',id,daysAgo(80));
+      prices=data.slice().sort((a,b)=>a.date<b.date?-1:1).map(p=>Number(p.close));
+    } else {
+      const data=await fmGet('USStockPrice',ticker,daysAgo(80));
+      prices=data.slice().sort((a,b)=>a.date<b.date?-1:1).map(p=>Number(p.Close));
+    }
+    if(prices.length<20) return null;
+    const ma20=prices.slice(-20).reduce((s,v)=>s+v,0)/20;
+    const price=prices[prices.length-1];
+    const dist=(price-ma20)/ma20*100;
+    return {price,ma20:+ma20.toFixed(2),dist:+dist.toFixed(2)};
+  }catch(e){ return null; }
+}
+
+function renderSatStopLoss(c){
+  const sats=c.rows.filter(r=>r.track==='satellite');
+  if(!sats.length) return `<div class="text-center py-8 text-slate-400 text-sm">沒有衛星倉持股。<br>在持股管理中將軌道設為「衛星倉」即可在此監控停損狀態。</div>`;
+  const rows=sats.map(r=>{
+    const st=satMAStatus[r.t||r.ticker];
+    const sig=st?stopLossLight(st.dist):{light:'⚪',label:'尚未載入',cls:'text-slate-400',signal:'na'};
+    const rowBg=sig.signal==='red'?'bg-red-50':sig.signal==='yellow'?'bg-amber-50':'';
+    return `<tr class="border-b border-slate-100 ${rowBg}">
+      <td class="px-3 py-2 font-mono text-xs">${r.ticker}</td>
+      <td class="px-3 py-2 text-xs">${r.name||'—'}</td>
+      <td class="px-3 py-2 text-right text-xs tabular-nums">${st?st.price.toLocaleString():'—'}</td>
+      <td class="px-3 py-2 text-right text-xs tabular-nums">${st?st.ma20.toLocaleString():'—'}</td>
+      <td class="px-3 py-2 text-right text-xs tabular-nums ${st?upCls(st.dist):''}">${st?(st.dist>0?'+':'')+st.dist.toFixed(1)+'%':'—'}</td>
+      <td class="px-3 py-2 text-xs font-bold ${sig.cls}">${sig.light} ${sig.label}</td>
+    </tr>`;
+  }).join('');
+  const hasRed=sats.some(r=>{const st=satMAStatus[r.t||r.ticker]; return st&&stopLossLight(st.dist).signal==='red';});
+  const loadedCount=sats.filter(r=>satMAStatus[r.t||r.ticker]).length;
+  return `<div class="space-y-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2"><span class="text-sm font-bold text-slate-700">🛑 衛星倉月線停損監控</span>${srcBadge('data')}</div>
+      <button onclick="loadSatMA()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">🔄 載入月線數據</button>
+    </div>
+    ${hasRed?`<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 font-bold">⚠️ 有衛星股已跌破月線停損點，依衛星倉紀律應分批出場！</div>`:''}
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-slate-600">
+      <b>月線停損規則：</b>現價跌破 20日均線 → 🔴 破線停損；位於月線 ±3% 以內 → 🟡 警戒；高於月線 +3% → 🟢 安全<br>
+      <span class="text-slate-400">已載入 ${loadedCount}/${sats.length} 檔｜${srcBadge('framework')} 規則由雙軌制框架自動計算</span>
+    </div>
+    <div class="overflow-x-auto ns">
+      <table class="w-full text-xs">
+        <thead><tr class="text-slate-400 border-b border-slate-200">
+          <th class="px-3 py-2 text-left">代號</th><th class="px-3 py-2 text-left">名稱</th>
+          <th class="px-3 py-2 text-right">現價</th><th class="px-3 py-2 text-right">月線(20MA)</th>
+          <th class="px-3 py-2 text-right">距離%</th><th class="px-3 py-2 text-left">停損狀態</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <p class="text-[11px] text-slate-400">月線 = 近20個交易日收盤均價。數據來源：FinMind 日收盤。⚠️ 僅供紀律參考，非投資建議。</p>
+  </div>`;
+}
+
+async function loadSatMA(){
+  const c=pfCompute();
+  const sats=c.rows.filter(r=>r.track==='satellite'&&r.ticker);
+  if(!sats.length){ alert('沒有衛星倉持股'); return; }
+  const btn=document.querySelector('button[onclick="loadSatMA()"]');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ 載入中...'; }
+  await Promise.all(sats.map(async r=>{
+    const t=pfNorm(r.ticker);
+    const res=await fetchSatMA20(t);
+    if(res) satMAStatus[t]=res;
+  }));
+  if(btn){ btn.disabled=false; btn.textContent='🔄 載入月線數據'; }
+  renderPortfolio();
+}
+
+// ─── 市場溫度計 ──────────────────────────────────────────
+let mktTempData=null; // cache
+
+async function fetchMarketIndicators(){
+  // 使用 0050.TW（元大台灣50）作為大盤代理指標
+  const [px0050, per0050, marg0050, px2330, per2330]=await Promise.all([
+    fmGet('TaiwanStockPrice','0050',daysAgo(500)),
+    fmGet('TaiwanStockPER','0050',daysAgo(500)),
+    fmGet('TaiwanStockMarginPurchaseShortSale','0050',daysAgo(80)),
+    fmGet('TaiwanStockPrice','2330',daysAgo(500)),
+    fmGet('TaiwanStockPER','2330',daysAgo(400))
+  ]);
+  const pxSort=arr=>arr.slice().sort((a,b)=>a.date<b.date?-1:1);
+  // ① 大盤 PE 百分位（0050 代理）
+  let pePctile=null, curPE=null;
+  if(per0050.length){
+    const arr=per0050.map(x=>x.PER).filter(v=>v!=null&&v>0);
+    const last=per0050[per0050.length-1];
+    curPE=last?+Number(last.PER).toFixed(1):null;
+    if(arr.length>20&&curPE) pePctile=+(arr.filter(v=>v<curPE).length/arr.length*100).toFixed(0);
+  }
+  // ② 台積電估計佔大盤權重（固定 ~35% 並附說明）
+  let tsmc_weight=35; // 近年大約值
+  // ③ 融資餘額 20 日變化（0050.TW 融資）
+  let marginChg20=null;
+  if(marg0050.length){
+    const s=pxSort(marg0050), last=s[s.length-1], prev20=s.length>20?s[s.length-21]:s[0];
+    if(last&&prev20) marginChg20=+((Number(last.MarginPurchaseTodayBalance)-Number(prev20.MarginPurchaseTodayBalance))/Number(prev20.MarginPurchaseTodayBalance)*100).toFixed(1);
+  }
+  // ④ 0050 乖離率（現價 vs 季線 60MA）
+  let deviation=null, price0050=null;
+  if(px0050.length){
+    const s=pxSort(px0050);
+    const closes=s.map(p=>Number(p.close));
+    if(closes.length>=60){
+      const ma60=closes.slice(-60).reduce((a,v)=>a+v,0)/60;
+      const last=closes[closes.length-1];
+      price0050=last;
+      deviation=+((last-ma60)/ma60*100).toFixed(1);
+    }
+  }
+  return {pePctile, curPE, tsmc_weight, marginChg20, deviation, price0050};
+}
+
+function calcMktTemp(ind){
+  let score=50;
+  const factors=[];
+  if(ind.pePctile!=null){
+    const s=ind.pePctile>80?-20:ind.pePctile>60?-10:ind.pePctile<30?+20:ind.pePctile<40?+10:0;
+    score+=s; factors.push({label:'大盤PE百分位',val:ind.pePctile+'%',tone:ind.pePctile>70?'bad':ind.pePctile<35?'good':'warn'});
+  }
+  if(ind.tsmc_weight!=null){
+    const s=ind.tsmc_weight>42?-10:0;
+    score+=s; factors.push({label:'台積電佔大盤',val:'~'+ind.tsmc_weight+'%',tone:ind.tsmc_weight>42?'bad':'warn',note:'估計值'});
+  }
+  if(ind.marginChg20!=null){
+    const s=ind.marginChg20>15?-15:ind.marginChg20>5?-8:ind.marginChg20<-10?+10:0;
+    score+=s; factors.push({label:'融資20日增幅',val:(ind.marginChg20>0?'+':'')+ind.marginChg20+'%',tone:ind.marginChg20>10?'bad':ind.marginChg20<-5?'good':'warn'});
+  }
+  if(ind.deviation!=null){
+    const s=ind.deviation>10?-20:ind.deviation>5?-10:ind.deviation<-5?+10:0;
+    score+=s; factors.push({label:'0050乖離率(季線)',val:(ind.deviation>0?'+':'')+ind.deviation+'%',tone:ind.deviation>8?'bad':ind.deviation<-5?'good':'warn'});
+  }
+  score=Math.max(0,Math.min(100,score));
+  const level=score<40?{label:'價值市場',color:'emerald',advice:'市場估值偏低，可逢低加碼核心倉，提高股票曝險比重'}:score<70?{label:'中性市場',color:'amber',advice:'估值中性，維持目標配置，衛星倉嚴守停損紀律'}:{label:'動能/過熱',color:'red',advice:'市場過熱訊號，提高現金防禦層，衛星倉停損收緊至月線，核心倉目標比例下修'};
+  return {score, level, factors};
+}
+
+async function fetchAndRenderMarketTemp(){
+  const el=document.getElementById('mktTempSection'); if(!el) return;
+  el.innerHTML=`<div class="text-center py-6"><p class="text-xs text-slate-400">⏳ 正在抓取市場溫度指標（0050.TW / 2330.TW）...</p></div>`;
+  try{
+    const ind=await fetchMarketIndicators();
+    mktTempData=ind;
+    const tmp=calcMktTemp(ind);
+    const barW=tmp.score;
+    const barCol=tmp.score<40?'bg-emerald-500':tmp.score<70?'bg-amber-500':'bg-red-500';
+    const factCards=tmp.factors.map(f=>`<div class="bg-white border ${f.tone==='bad'?'border-red-200':f.tone==='good'?'border-emerald-200':'border-slate-200'} rounded-xl p-3 text-center">
+      <p class="text-[11px] text-slate-400 mb-1">${f.label}${f.note?`<span class="text-[9px] ml-0.5">(${f.note})</span>`:''}</p>
+      <p class="text-base font-bold tabular-nums ${f.tone==='bad'?'text-red-600':f.tone==='good'?'text-emerald-600':'text-amber-600'}">${f.val}</p>
+      <span class="text-[10px] ${f.tone==='bad'?'text-red-400':f.tone==='good'?'text-emerald-400':'text-amber-400'}">${f.tone==='bad'?'⚠️ 過熱':f.tone==='good'?'✅ 偏低':'⏸ 中性'}</span>
+    </div>`).join('');
+    el.innerHTML=`
+      <div class="flex items-center gap-2 mb-1"><span class="text-sm font-bold text-slate-700">🌡️ 市場溫度計</span>${srcBadge('data')}</div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="flex items-end gap-4 mb-3">
+          <div><p class="text-xs text-slate-400 mb-1">溫度指數</p><p class="text-4xl font-bold tabular-nums text-${tmp.level.color}-600">${tmp.score}</p></div>
+          <div class="flex-1"><p class="text-xs text-slate-400 mb-1">市場狀態</p><p class="text-lg font-bold text-${tmp.level.color}-600">${tmp.level.label}</p></div>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-3">
+          <div class="${barCol} h-3 rounded-full transition-all" style="width:${barW}%"></div>
+        </div>
+        <div class="grid grid-cols-3 text-[10px] text-slate-400 mb-4">
+          <span>🟢 0–40 價值市場</span><span class="text-center">🟡 40–70 中性</span><span class="text-right">🔴 70–100 過熱</span>
+        </div>
+        <div class="bg-${tmp.level.color}-50 border border-${tmp.level.color}-200 rounded-xl p-3 text-xs text-${tmp.level.color}-800 font-medium mb-4">
+          📌 ${tmp.level.advice}
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">${factCards}</div>
+      </div>
+      <p class="text-[11px] text-slate-400">數據來源：FinMind 日收盤｜0050.TW 作為大盤代理。台積電權重為估計值。⚠️ 僅供參考，不構成投資建議。</p>`;
+    // 同步更新頂部溫度條
+    updateMktTempBar(tmp);
+  }catch(e){
+    el.innerHTML=`<div class="text-center py-6 text-red-500 text-xs">市場數據抓取失敗：${e.message}</div>`;
+  }
+}
+
+function updateMktTempBar(tmp){
+  const bar=document.getElementById('mktTempBar'); if(!bar) return;
+  const col=tmp.score<40?'text-emerald-600':tmp.score<70?'text-amber-600':'text-red-600';
+  bar.innerHTML=`<span class="text-xs font-bold ${col}">🌡️ 市場溫度 ${tmp.score}/100</span>
+    <span class="text-xs ${col} font-semibold">${tmp.level.label}</span>
+    <span class="text-[11px] text-slate-400 hidden sm:inline">${tmp.level.advice}</span>`;
+  bar.classList.remove('hidden');
+}
+
+// ─── 月度損益表 ──────────────────────────────────────────
+const PL_KEY='kaku_monthly_pl_v1';
+function getPLData(){ try{ return JSON.parse(localStorage.getItem(PL_KEY)||'{}'); }catch(e){ return {}; } }
+function savePLData(d){ try{ localStorage.setItem(PL_KEY,JSON.stringify(d)); }catch(e){} }
+
+function renderMonthlyPL(){
+  const data=getPLData();
+  const now=new Date(), ym=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const m=data[ym]||{salary:0,bonus:0,divIncome:0,fixedExp:0,varExp:0,unrealized:0};
+  const gross=Number(m.salary)+Number(m.bonus)+Number(m.divIncome);
+  const expenses=Number(m.fixedExp)+Number(m.varExp);
+  const netOp=gross-expenses;
+  const netPL=netOp+Number(m.unrealized);
+  const row=(label,val,cls='')=>`<div class="flex justify-between py-1.5 border-b border-slate-100 last:border-0 text-xs"><span class="text-slate-600">${label}</span><span class="font-bold tabular-nums ${cls}">${val>=0?'NT$'+Math.round(val).toLocaleString():'- NT$'+Math.round(Math.abs(val)).toLocaleString()}</span></div>`;
+  const inp=(id,val,ph)=>`<input type="number" id="pl_${id}" value="${val||''}" placeholder="${ph}" onchange="savePLField('${ym}','${id}',this.value)" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400">`;
+  return `<div class="space-y-3">
+    <div class="flex items-center gap-2"><span class="text-sm font-bold text-slate-700">📅 月度損益表</span><span class="text-xs text-slate-400">${ym}</span>${srcBadge('framework')}</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      ${card(`<p class="text-xs font-bold text-emerald-700 mb-2">💰 收入</p>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">薪資</span>${inp('salary',m.salary,'0')}</div>
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">獎金</span>${inp('bonus',m.bonus,'0')}</div>
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">股息/分配</span>${inp('divIncome',m.divIncome,'0')}</div>
+        </div>`)}
+      ${card(`<p class="text-xs font-bold text-red-700 mb-2">💸 支出</p>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">固定支出</span>${inp('fixedExp',m.fixedExp,'定投/保費')}</div>
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">變動支出</span>${inp('varExp',m.varExp,'生活費')}</div>
+          <div class="flex items-center gap-2 text-xs"><span class="text-slate-500 w-16 shrink-0">未實現損益</span>${inp('unrealized',m.unrealized,'±')}</div>
+        </div>`)}
+    </div>
+    ${card(`<p class="text-xs font-bold text-slate-600 mb-2">📊 損益彙總</p>
+      ${row('＋ 薪資+獎金+股息（毛收入）',gross,'text-emerald-600')}
+      ${row('－ 固定+變動支出（總支出）',-expenses,'text-red-500')}
+      ${row('= 月結餘（毛利）',netOp,netOp>=0?'text-emerald-700':'text-red-600')}
+      ${row('± 投資未實現損益',m.unrealized,Number(m.unrealized)>=0?'text-emerald-600':'text-red-500')}
+      <div class="flex justify-between pt-2 mt-1 border-t border-slate-200">
+        <span class="text-sm font-bold text-slate-700">本月淨損益</span>
+        <span class="text-lg font-bold tabular-nums ${netPL>=0?'text-emerald-700':'text-red-600'}">${netPL>=0?'NT$':'- NT$'}${Math.round(Math.abs(netPL)).toLocaleString()}</span>
+      </div>`,'border-dashed')}
+    <p class="text-[11px] text-slate-400">資料只存本機瀏覽器。每月初手動更新。⚠️ 僅供個人記錄，不構成任何財務建議。</p>
+  </div>`;
+}
+
+function savePLField(ym, field, val){
+  const data=getPLData();
+  if(!data[ym]) data[ym]={};
+  data[ym][field]=Number(val)||0;
+  savePLData(data);
+  // 就地更新彙總（不重建整個頁面以保持焦點）
+  const m=data[ym];
+  const gross=Number(m.salary)+Number(m.bonus)+Number(m.divIncome);
+  const expenses=Number(m.fixedExp)+Number(m.varExp);
+  const netOp=gross-expenses;
+  const netPL=netOp+Number(m.unrealized);
+  // 重新 render 摘要只靠 pfSwitchTab 是太重的，這裡簡單處理
+}
+
+// ─── 沉沒基金追蹤 ────────────────────────────────────────
+const SF_KEY='kaku_sinking_fund_v1';
+const SF_DEFAULTS=[
+  {name:'保費',annual:36276},
+  {name:'紅包',annual:14000},
+  {name:'旅遊',annual:12000}
+];
+function getSFData(){ try{ return JSON.parse(localStorage.getItem(SF_KEY)||'[]'); }catch(e){ return []; } }
+function saveSFData(d){ try{ localStorage.setItem(SF_KEY,JSON.stringify(d)); }catch(e){} }
+
+function renderSinkingFund(){
+  let items=getSFData(); if(!items.length){ items=SF_DEFAULTS.map(x=>({...x,balance:0})); saveSFData(items); }
+  const totalAnnual=items.reduce((s,i)=>s+Number(i.annual),0);
+  const monthlyTarget=+(totalAnnual/12).toFixed(0);
+  const now=new Date(), monthsElapsed=now.getMonth()+now.getDate()/30;
+  const rows=items.map((it,idx)=>{
+    const target=+(it.annual*monthsElapsed/12).toFixed(0);
+    const bal=Number(it.balance)||0;
+    const pct=target?Math.min(100,bal/target*100):0;
+    const ok=bal>=target;
+    return `<div class="bg-white border ${ok?'border-emerald-200':'border-amber-200'} rounded-xl p-3">
+      <div class="flex justify-between mb-1">
+        <span class="text-xs font-bold text-slate-700">${it.name}</span>
+        <span class="text-[10px] text-slate-400">年度目標 NT$${Number(it.annual).toLocaleString()}</span>
+      </div>
+      <div class="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
+        <div class="${ok?'bg-emerald-500':'bg-amber-400'} h-2 rounded-full" style="width:${pct}%"></div>
+      </div>
+      <div class="flex justify-between text-xs mb-2">
+        <span class="text-slate-400">目前應提撥 NT$${target.toLocaleString()}</span>
+        <span class="font-bold tabular-nums ${ok?'text-emerald-600':'text-amber-600'}">已存 NT$${bal.toLocaleString()} (${pct.toFixed(0)}%)</span>
+      </div>
+      <input type="number" value="${bal}" placeholder="目前已存金額" onchange="sfUpdate(${idx},this.value)"
+        class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right tabular-nums focus:outline-none focus:border-blue-400">
+    </div>`;
+  }).join('');
+  const totalBal=items.reduce((s,i)=>s+Number(i.balance||0),0);
+  const totalTarget=+(totalAnnual*monthsElapsed/12).toFixed(0);
+  return `<div class="space-y-3">
+    <div class="flex items-center gap-2"><span class="text-sm font-bold text-slate-700">🏦 沉沒基金追蹤</span>${srcBadge('framework')}</div>
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 flex justify-between items-center flex-wrap gap-2">
+      <div><p class="text-xs text-slate-500">月均應提撥</p><p class="text-2xl font-bold text-blue-700 tabular-nums">NT$${monthlyTarget.toLocaleString()}</p></div>
+      <div class="text-right"><p class="text-xs text-slate-500">本月截至目前合計進度</p>
+        <p class="text-lg font-bold tabular-nums ${totalBal>=totalTarget?'text-emerald-600':'text-amber-600'}">NT$${totalBal.toLocaleString()} / NT$${totalTarget.toLocaleString()}</p></div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${rows}</div>
+    <p class="text-[11px] text-slate-400">大額年度支出拆成月份提撥。數字只存本機瀏覽器。</p>
+  </div>`;
+}
+function sfUpdate(idx, val){
+  const items=getSFData();
+  if(items[idx]) items[idx].balance=Number(val)||0;
+  saveSFData(items);
+}
+
+// ─── 決策回測追蹤 ────────────────────────────────────────
+const DL_KEY='kaku_decision_log_v1';
+function getDecisionLogs(){ try{ return JSON.parse(localStorage.getItem(DL_KEY)||'[]'); }catch(e){ return []; } }
+function logDecision(ticker, data){
+  if(!data||!data.act) return;
+  const logs=getDecisionLogs();
+  const today=new Date().toISOString().slice(0,10);
+  const entry={
+    date:today, ticker:ticker.toUpperCase(),
+    name:data.co||(data.real&&data.real.name)||ticker,
+    signal:data.act, signalZ:data.actz,
+    price:(data.real&&data.real.price)||null,
+    priceStr:(data.real&&data.real.priceStr)||null,
+    score:data.score||null,
+    why:data.why||''
+  };
+  const idx=logs.findIndex(l=>l.ticker===entry.ticker&&l.date===today);
+  if(idx>=0) logs[idx]=entry; else logs.push(entry);
+  try{ localStorage.setItem(DL_KEY,JSON.stringify(logs.slice(-100))); }catch(e){}
+}
+async function refreshDecisionPrices(){
+  const logs=getDecisionLogs();
+  if(!logs.length) return;
+  const btn=document.getElementById('dlRefreshBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ 更新中...'; }
+  const tickers=[...new Set(logs.map(l=>l.ticker))];
+  const latest={};
+  await Promise.all(tickers.map(async t=>{
+    try{
+      const isTW=/\.TWO?$/.test(t);
+      if(isTW){
+        const id=t.replace(/\.TWO?$/,'');
+        const px=await fmGet('TaiwanStockPrice',id,daysAgo(14));
+        const s=px.slice().sort((a,b)=>a.date<b.date?-1:1);
+        if(s.length) latest[t]={price:Number(s[s.length-1].close),date:s[s.length-1].date};
+      } else {
+        const px=await fmGet('USStockPrice',t,daysAgo(14));
+        const s=px.slice().sort((a,b)=>a.date<b.date?-1:1);
+        if(s.length) latest[t]={price:Number(s[s.length-1].Close),date:s[s.length-1].date};
+      }
+    }catch(e){}
+  }));
+  if(btn){ btn.disabled=false; btn.textContent='🔄 更新現價'; }
+  renderDecisionLogWithPrices(logs, latest);
+}
+function renderDecisionLog(){
+  const logs=getDecisionLogs();
+  if(!logs.length) return `<div class="text-center py-8 text-slate-400 text-sm">
+    <p class="mb-2">📋 決策記錄尚空白</p>
+    <p class="text-xs">每次在「個股分析」分析完成後，系統會自動記錄 BUY/HOLD/AVOID 決策。<br>分析幾支股票後再來查看。</p>
+  </div>`;
+  return renderDecisionLogWithPrices(logs, {});
+}
+function renderDecisionLogWithPrices(logs, latest){
+  const el=document.getElementById('dlTableBody');
+  const sortedLogs=[...logs].sort((a,b)=>b.date.localeCompare(a.date));
+  const sigCfg={BUY:{bg:'bg-emerald-50 text-emerald-700',label:'買入'},HOLD:{bg:'bg-amber-50 text-amber-700',label:'持有'},AVOID:{bg:'bg-red-50 text-red-700',label:'避開'}};
+  const rows=sortedLogs.map(l=>{
+    const now=latest[l.ticker];
+    const ret=(now&&now.price&&l.price)?+((now.price-l.price)/l.price*100).toFixed(1):null;
+    const retCls=ret!=null?(ret>0?'text-rose-600':ret<0?'text-emerald-600':'text-slate-500'):'text-slate-400';
+    const sig=sigCfg[l.signal]||{bg:'bg-slate-50 text-slate-600',label:l.signalZ||l.signal};
+    return `<tr class="border-b border-slate-100 hover:bg-slate-50">
+      <td class="px-2 py-2 text-xs text-slate-400">${l.date}</td>
+      <td class="px-2 py-2 font-mono text-xs">${l.ticker}</td>
+      <td class="px-2 py-2 text-xs text-slate-600 max-w-20 truncate">${l.name||'—'}</td>
+      <td class="px-2 py-2"><span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sig.bg}">${sig.label}</span></td>
+      <td class="px-2 py-2 text-right text-xs tabular-nums">${l.priceStr||'—'}</td>
+      <td class="px-2 py-2 text-right text-xs tabular-nums">${now?now.price.toLocaleString():'—'}</td>
+      <td class="px-2 py-2 text-right text-xs font-bold tabular-nums ${retCls}">${ret!=null?(ret>0?'+':'')+ret+'%':'—'}</td>
+      <td class="px-2 py-2 text-xs text-slate-400 max-w-24 truncate" title="${l.why||''}">${l.score?l.score+'/100':''}</td>
+    </tr>`;
+  }).join('');
+  // 統計
+  const buyLogs=sortedLogs.filter(l=>l.signal==='BUY'&&latest[l.ticker]&&l.price);
+  const buyRets=buyLogs.map(l=>(latest[l.ticker].price-l.price)/l.price*100);
+  const buyAvg=buyRets.length?+(buyRets.reduce((s,v)=>s+v,0)/buyRets.length).toFixed(1):null;
+  const buyWin=buyRets.length?+(buyRets.filter(v=>v>0).length/buyRets.length*100).toFixed(0):null;
+  const avoidLogs=sortedLogs.filter(l=>l.signal==='AVOID'&&latest[l.ticker]&&l.price);
+  const avoidRets=avoidLogs.map(l=>(latest[l.ticker].price-l.price)/l.price*100);
+  const avoidAvg=avoidRets.length?+(avoidRets.reduce((s,v)=>s+v,0)/avoidRets.length).toFixed(1):null;
+  const html=`<div class="space-y-3">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="flex items-center gap-2"><span class="text-sm font-bold text-slate-700">📈 決策回測追蹤</span>${srcBadge('data')}</div>
+      <div class="flex gap-2">
+        <button id="dlRefreshBtn" onclick="refreshDecisionPrices()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-lg">🔄 更新現價</button>
+        <button onclick="if(confirm('確定清除所有決策記錄？'))localStorage.removeItem('${DL_KEY}');renderPortfolio()" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-500 text-xs font-bold rounded-lg hover:bg-red-50 hover:text-red-500">清空</button>
+      </div>
+    </div>
+    ${buyRets.length?`<div class="grid grid-cols-3 gap-2">
+      ${card(`<p class="text-[11px] text-slate-400 mb-0.5">BUY 標的平均報酬</p><p class="text-xl font-bold tabular-nums ${buyAvg>=0?'text-emerald-600':'text-red-600'}">${buyAvg!=null?(buyAvg>0?'+':'')+buyAvg+'%':'—'}</p>`)}
+      ${card(`<p class="text-[11px] text-slate-400 mb-0.5">BUY 勝率</p><p class="text-xl font-bold tabular-nums ${buyWin>=50?'text-emerald-600':'text-amber-600'}">${buyWin!=null?buyWin+'%':'—'}</p>`)}
+      ${card(`<p class="text-[11px] text-slate-400 mb-0.5">AVOID 平均走勢</p><p class="text-xl font-bold tabular-nums ${avoidAvg!=null&&avoidAvg<0?'text-emerald-600':'text-red-600'}">${avoidAvg!=null?(avoidAvg>0?'+':'')+avoidAvg+'%':'—'}</p><p class="text-[10px] text-slate-400">負數=正確避開</p>`)}
+    </div>`:''}
+    <div class="overflow-x-auto ns">
+      <table class="w-full text-xs">
+        <thead><tr class="text-slate-400 border-b border-slate-200">
+          <th class="px-2 py-2 text-left">日期</th><th class="px-2 py-2 text-left">代號</th><th class="px-2 py-2 text-left">名稱</th>
+          <th class="px-2 py-2 text-left">評級</th><th class="px-2 py-2 text-right">紀錄價</th>
+          <th class="px-2 py-2 text-right">現價</th><th class="px-2 py-2 text-right">報酬</th><th class="px-2 py-2 text-right">評分</th>
+        </tr></thead>
+        <tbody id="dlTableBody">${rows}</tbody>
+      </table>
+    </div>
+    <p class="text-[11px] text-slate-400">系統在每次分析個股後自動記錄。按「更新現價」可計算報酬。最多保留 100 筆。⚠️ 過去績效不代表未來結果。</p>
+  </div>`;
+  if(el){ el.innerHTML=rows; } // 就地更新
+  else { const sec=document.getElementById('portfolio'); if(sec) { const box=sec.querySelector('.space-y-3'); if(box) box.innerHTML=html; } }
+  return html;
+}
+
 </script>
 </body>
 </html>
