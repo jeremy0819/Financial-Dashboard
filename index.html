@@ -94,9 +94,10 @@ button:not(:disabled):active{transform:scale(.97)}
   </div>
 
   <!-- Welcome -->
-  <div id="welcome" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+  <div id="welcome" class="flex-1 overflow-y-auto p-6 md:p-10 ns">
+    <div class="max-w-2xl mx-auto flex flex-col items-center text-center">
     <p class="text-5xl mb-3">📊</p>
-    <p class="text-base font-bold text-slate-500 mb-1">AI 財務分析系統 v7.0 待命中</p>
+    <p class="text-base font-bold text-slate-600 mb-1">AI 財務分析系統 v7.0 待命中</p>
     <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 六層次深度分析 + 情境試算</p>
     <div class="flex gap-2 flex-wrap justify-center mb-4">
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🏥</p><p class="text-xs text-slate-500 mt-0.5">財務健檢</p></div>
@@ -104,7 +105,7 @@ button:not(:disabled):active{transform:scale(.97)}
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🚀</p><p class="text-xs text-slate-500 mt-0.5">成長潛力</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">⚔️</p><p class="text-xs text-slate-500 mt-0.5">多空辯論</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🎯</p><p class="text-xs text-slate-500 mt-0.5">投資決策</p></div>
-      <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-center w-20"><p class="text-xl">📐</p><p class="text-xs text-blue-600 mt-0.5 font-bold">情境分析 NEW</p></div>
+      <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-center w-20"><p class="text-xl">📐</p><p class="text-xs text-blue-600 mt-0.5 font-bold">情境分析</p></div>
     </div>
     <div class="flex gap-2 flex-wrap justify-center text-xs text-slate-400 mb-6">
       <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🕸️ 六維雷達圖</span>
@@ -112,13 +113,69 @@ button:not(:disabled):active{transform:scale(.97)}
       <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🏦 升息情境模擬</span>
     </div>
     <p class="text-xs text-slate-400 mb-2">⚡ 點擊熱門標的立即分析</p>
-    <div class="flex gap-2 flex-wrap justify-center">
+    <div class="flex gap-2 flex-wrap justify-center mb-10">
       <button onclick="quickRun('2330.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">台積電 2330</button>
       <button onclick="quickRun('2454.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">聯發科 2454</button>
       <button onclick="quickRun('2308.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">台達電 2308</button>
       <button onclick="quickRun('2881.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">富邦金 2881</button>
       <button onclick="quickRun('NVDA')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">輝達 NVDA</button>
       <button onclick="quickRun('TSLA')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">特斯拉 TSLA</button>
+    </div>
+
+    <!-- ── 更新日誌 ── -->
+    <div class="w-full text-left space-y-3">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">更新日誌</p>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">v7.0</span>
+          <span class="text-xs font-bold text-slate-700">UI/UX 全面優化</span>
+          <span class="ml-auto text-[10px] text-slate-400 tabular-nums">2026-06-10</span>
+        </div>
+        <ul class="space-y-1 text-xs text-slate-500 leading-relaxed">
+          <li>✨ 全站套用 Noto Sans TC 字型 + favicon + SEO meta 標籤</li>
+          <li>✨ 所有頁籤切換加入 fade-in 動畫，切換自動回到頂部</li>
+          <li>✨ Tab 與子分頁改用藍色高亮指示，按鈕按壓縮放回饋，卡片 hover 陰影</li>
+          <li>✨ Toast 輕量通知系統（取代 alert；更新報價顯示成功/失敗檔數）</li>
+          <li>✨ 輸入純數字代號自動補 .TW（2330 → 2330.TW）</li>
+          <li>✨ 快速選股顯示公司名稱；歡迎頁新增熱門標的一鍵分析</li>
+          <li>✨ 記住上次使用的模式與代號，重新整理自動還原</li>
+          <li>✨ 鍵盤捷徑：按 <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-[9px] font-mono">/</kbd> 聚焦代號輸入框</li>
+          <li>🔧 七個圖表函式加入 Chart.js 載入失敗防護</li>
+        </ul>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">v7.0</span>
+          <span class="text-xs font-bold text-slate-700">投資儀表板全面升級</span>
+          <span class="ml-auto text-[10px] text-slate-400 tabular-nums">2026-06-10</span>
+        </div>
+        <ul class="space-y-1 text-xs text-slate-500 leading-relaxed">
+          <li>🆕 三分流來源標籤：🧠 框架判斷 ／ 📊 即時數據 ／ 🤖 AI 生成</li>
+          <li>🆕 衛星倉月線停損監控（20MA 距離 + 紅黃綠燈預警）</li>
+          <li>🆕 市場溫度計（0050 四指標 → 0–100 分 + 倉位建議）</li>
+          <li>🆕 月度損益表（收入／支出／儲蓄率，存於本機）</li>
+          <li>🆕 沉沒基金追蹤（各目標進度條）</li>
+          <li>🆕 決策回測追蹤（自動記錄每次分析，統計買入勝率）</li>
+          <li>🆕 組合管理改為六分頁：持股管理 ／ 衛星停損 ／ 市場溫度 ／ 月度報表 ／ 沉沒基金 ／ 決策追蹤</li>
+        </ul>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-4 opacity-70">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">v6.0</span>
+          <span class="text-xs font-bold text-slate-700">情境分析 + 核心衛星雙軌制</span>
+          <span class="ml-auto text-[10px] text-slate-400 tabular-nums">舊版</span>
+        </div>
+        <ul class="space-y-1 text-xs text-slate-400 leading-relaxed">
+          <li>六層次深度分析（財務健檢 ／ 估值 ／ 成長 ／ 多空 ／ 決策 ／ 情境）</li>
+          <li>個人資產核心-衛星雙軌制框架 + 紀律檢核</li>
+          <li>投資計算器（複利 ／ 定期定額 ／ 72法則 ／ 台灣定存）</li>
+          <li>FinMind 即時日收盤數據（台股 + 美股，免金鑰）</li>
+        </ul>
+      </div>
+    </div>
     </div>
   </div>
 
