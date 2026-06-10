@@ -4,13 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>AI 財務健檢系統 v7.0 | 台灣投資理財</title>
+<meta name="description" content="輸入台股/美股代號，抓取 FinMind 日收盤數據，產生六層次深度分析報告。內建核心-衛星雙軌制資產管理與投資計算器。">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+body{font-family:'Noto Sans TC',ui-sans-serif,system-ui,-apple-system,sans-serif}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 .cur{display:inline-block;width:7px;height:13px;background:#4ade80;animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px}
 .ns::-webkit-scrollbar{display:none}.ns{-ms-overflow-style:none;scrollbar-width:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade-in{animation:fadeUp .25s ease-out}
+button{cursor:pointer}
+button:not(:disabled):active{transform:scale(.97)}
 </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-slate-100 text-slate-800">
@@ -57,6 +67,7 @@
   </div>
 </aside>
 <div id="backdrop" class="hidden md:hidden fixed inset-0 bg-black/40 z-30" onclick="toggleSidebar(false)"></div>
+<div id="toastBox" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 items-center pointer-events-none"></div>
 
 <!-- MAIN -->
 <main class="flex-1 flex flex-col overflow-hidden relative">
@@ -95,10 +106,19 @@
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🎯</p><p class="text-xs text-slate-500 mt-0.5">投資決策</p></div>
       <div class="px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-center w-20"><p class="text-xl">📐</p><p class="text-xs text-blue-600 mt-0.5 font-bold">情境分析 NEW</p></div>
     </div>
-    <div class="flex gap-2 flex-wrap justify-center text-xs text-slate-400">
+    <div class="flex gap-2 flex-wrap justify-center text-xs text-slate-400 mb-6">
       <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🕸️ 六維雷達圖</span>
       <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🧮 投資計算器</span>
       <span class="px-2 py-1 bg-white border border-slate-200 rounded-lg">🏦 升息情境模擬</span>
+    </div>
+    <p class="text-xs text-slate-400 mb-2">⚡ 點擊熱門標的立即分析</p>
+    <div class="flex gap-2 flex-wrap justify-center">
+      <button onclick="quickRun('2330.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">台積電 2330</button>
+      <button onclick="quickRun('2454.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">聯發科 2454</button>
+      <button onclick="quickRun('2308.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">台達電 2308</button>
+      <button onclick="quickRun('2881.TW')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">富邦金 2881</button>
+      <button onclick="quickRun('NVDA')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">輝達 NVDA</button>
+      <button onclick="quickRun('TSLA')" class="px-3 py-1.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors">特斯拉 TSLA</button>
     </div>
   </div>
 
@@ -138,14 +158,26 @@ const cache={};                                        // 結果快取（key = t
 
 // ─── QUICK PICKS ─────────────────────────────────────────
 const QUICK=['2330.TW','2317.TW','2382.TW','6669.TW','2454.TW','2308.TW','2303.TW','3008.TW','2881.TW','2412.TW','NVDA','TSLA','MSFT','GOOGL','META','AAPL'];
+const QNAME={'2330.TW':'台積電','2317.TW':'鴻海','2382.TW':'廣達','6669.TW':'緯穎','2454.TW':'聯發科','2308.TW':'台達電','2303.TW':'聯電','3008.TW':'大立光','2881.TW':'富邦金','2412.TW':'中華電','NVDA':'輝達','TSLA':'特斯拉','MSFT':'微軟','GOOGL':'谷歌','META':'Meta','AAPL':'蘋果'};
 const qp=document.getElementById('qp');
 QUICK.forEach(t=>{
   const b=document.createElement('button');
-  b.textContent=t;
-  b.className='block w-full text-left px-2 py-1 text-xs font-mono text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors';
-  b.onclick=()=>{ document.getElementById('inp').value=t; run(); };
+  b.innerHTML=`<span class="font-mono">${t}</span><span class="text-slate-600">${QNAME[t]||''}</span>`;
+  b.className='flex w-full justify-between items-center text-left px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded transition-colors';
+  b.onclick=()=>quickRun(t);
   qp.appendChild(b);
 });
+function quickRun(t){ document.getElementById('inp').value=t; setMode('stock'); run(); }
+
+// ─── TOAST 輕量通知（取代 alert）─────────────────────────
+function toast(msg,type='info'){
+  const colors={info:'bg-slate-800',success:'bg-emerald-600',warn:'bg-amber-500',error:'bg-rose-600'};
+  const el=document.createElement('div');
+  el.className=`${colors[type]||colors.info} text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg fade-in`;
+  el.textContent=msg;
+  document.getElementById('toastBox').appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); },2600);
+}
 
 // ─── CURATED NARRATIVE DB (質化分析；真實數字由 FinMind 即時覆蓋) ───
 const DB={
@@ -556,8 +588,8 @@ const TABS=[
 function switchTab(i){
   curTab=i;
   document.querySelectorAll('.tab-btn').forEach((b,j)=>{
-    b.classList.toggle('border-slate-800',j===i);
-    b.classList.toggle('text-slate-800',j===i);
+    b.classList.toggle('border-blue-600',j===i);
+    b.classList.toggle('text-blue-700',j===i);
     b.classList.toggle('border-transparent',j!==i);
     b.classList.toggle('text-slate-400',j!==i);
   });
@@ -565,7 +597,7 @@ function switchTab(i){
 }
 
 // ─── RENDER HELPERS ──────────────────────────────────────
-function card(inner,extra=''){ return `<div class="bg-white border border-slate-200 rounded-xl p-4 ${extra}">${inner}</div>`; }
+function card(inner,extra=''){ return `<div class="bg-white border border-slate-200 rounded-xl p-4 transition-shadow hover:shadow-sm ${extra}">${inner}</div>`; }
 function badge(label,type='info'){
   const map={info:'bg-blue-100 text-blue-800',success:'bg-emerald-100 text-emerald-800',danger:'bg-red-100 text-red-800',warning:'bg-amber-100 text-amber-800'};
   return `<span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${map[type]||map.info}">${label}</span>`;
@@ -755,7 +787,7 @@ const MA_CFG=[
   {k:'ma120',label:'半年線(120)',color:'#8b5cf6',w:1.3}
 ];
 function drawTech(t){
-  const el=document.getElementById('cvTech'); if(!el) return;
+  const el=document.getElementById('cvTech'); if(!el||typeof Chart==='undefined') return;
   if(techChart) techChart.destroy();
   techChart=new Chart(el.getContext('2d'),{
     type:'line',
@@ -766,7 +798,7 @@ function drawTech(t){
   });
 }
 function drawRev(rev){
-  const el=document.getElementById('cvRev'); if(!el) return;
+  const el=document.getElementById('cvRev'); if(!el||typeof Chart==='undefined') return;
   if(revChart) revChart.destroy();
   revChart=new Chart(el.getContext('2d'),{
     type:'bar',
@@ -777,7 +809,7 @@ function drawRev(rev){
 }
 // 三大法人近20日淨額（張，堆疊長條）
 function drawInst(inst){
-  const el=document.getElementById('cvInst'); if(!el) return;
+  const el=document.getElementById('cvInst'); if(!el||typeof Chart==='undefined') return;
   if(instChart) instChart.destroy();
   instChart=new Chart(el.getContext('2d'),{
     type:'bar',
@@ -794,7 +826,9 @@ function drawInst(inst){
 
 function renderTabContent(d,i){
   const fns=[tabHealth,tabValuation,tabGrowth,tabDebate,tabDecision,tabScenario];
-  document.getElementById('tabContent').innerHTML=fns[i](d);
+  const tc=document.getElementById('tabContent');
+  tc.innerHTML=`<div class="fade-in">${fns[i](d)}</div>`;
+  tc.scrollTop=0; // 切換 Tab 自動回到頂部
   if(i===0 && d.real){ if(d.real.tech) drawTech(d.real.tech); if(d.real.revSeries) drawRev(d.real.revSeries); if(d.real.inst) drawInst(d.real.inst); }
   if(i===0) drawRadar(d);
 }
@@ -831,7 +865,7 @@ function renderResults(ticker,d){
 
   const bar=document.getElementById('tabBar');
   bar.innerHTML=TABS.map((t,i)=>`
-    <button class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${i===0?'border-slate-800 text-slate-800':'border-transparent text-slate-400'}"
+    <button class="tab-btn px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors ${i===0?'border-blue-600 text-blue-700':'border-transparent text-slate-400'}"
       onclick="switchTab(${i})">${t.icon} ${t.label}</button>`).join('');
   document.getElementById('welcome').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
@@ -865,7 +899,7 @@ function computeRadarScores(d){
   return [health, growth, valAttr, chip, tech, div];
 }
 function drawRadar(d){
-  const el=document.getElementById('cvRadar'); if(!el) return;
+  const el=document.getElementById('cvRadar'); if(!el||typeof Chart==='undefined') return;
   if(radarChart) radarChart.destroy();
   const scores=computeRadarScores(d);
   radarChart=new Chart(el.getContext('2d'),{
@@ -1022,8 +1056,11 @@ async function callAI(ticker,today,real){
 
 // ─── MAIN RUN ────────────────────────────────────────────
 async function run(){
-  const ticker=document.getElementById('inp').value.trim().toUpperCase();
+  let ticker=document.getElementById('inp').value.trim().toUpperCase();
   if(!ticker) return;
+  if(/^\d{4,6}[A-Z]?$/.test(ticker)) ticker+='.TW'; // 純數字台股代號自動補 .TW
+  document.getElementById('inp').value=ticker;
+  uiSave();
   toggleSidebar(false); // 手機：開始分析即收起側欄
   const now=new Date();
   const timeStr=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
@@ -1111,7 +1148,7 @@ let PF={holdings:[],cash:0}, pfPrices={}, pfChart=null, appMode='stock';
 function pfLoad(){ try{ const s=localStorage.getItem(PF_KEY); PF=s?JSON.parse(s):{holdings:[],cash:0}; }catch(e){ PF={holdings:[],cash:0}; } if(!PF.holdings) PF.holdings=[]; if(PF.cash==null) PF.cash=0; }
 function pfSave(){ try{ localStorage.setItem(PF_KEY,JSON.stringify(PF)); }catch(e){} }
 function pfLoadTemplate(){ PF=JSON.parse(JSON.stringify(KAKU_TEMPLATE)); pfSave(); renderPortfolio(); }
-function pfClear(){ if(!confirm('確定清空所有持股？（僅清除本機瀏覽器資料）')) return; PF={holdings:[],cash:0}; pfPrices={}; pfSave(); renderPortfolio(); }
+function pfClear(){ if(!confirm('確定清空所有持股？（僅清除本機瀏覽器資料）')) return; PF={holdings:[],cash:0}; pfPrices={}; pfSave(); renderPortfolio(); toast('已清空持股組合','info'); }
 // 代號正規化：純數字台股代號自動補 .TW（避免被當成美股而查無報價）
 function pfNorm(t){ t=(t||'').trim().toUpperCase(); if(/^\d{4,6}[A-Z]?$/.test(t)) t+='.TW'; return t; }
 function pfEdit(i,f,v){ if(!PF.holdings[i]) return; PF.holdings[i][f]=(f==='shares'||f==='cost')?(Number(v)||0):(f==='ticker'?pfNorm(v):v); pfSave(); pfRecompute(); if(f==='ticker') pfFetchOne(PF.holdings[i].ticker); }
@@ -1140,9 +1177,21 @@ function pfAdd(){ PF.holdings.push({ticker:'',name:'',track:'core',shares:0,cost
 function pfDel(i){ PF.holdings.splice(i,1); pfSave(); renderPortfolio(); }
 function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); pfRecompute(); }
 
+// ─── UI 狀態記憶（最後模式 + 最後代號，僅存本機）─────────
+const UI_KEY='kaku_ui_v1';
+function uiSave(){ try{ localStorage.setItem(UI_KEY,JSON.stringify({mode:appMode,ticker:document.getElementById('inp').value})); }catch(e){} }
+function uiRestore(){
+  try{
+    const u=JSON.parse(localStorage.getItem(UI_KEY)||'{}');
+    if(u.ticker) document.getElementById('inp').value=u.ticker;
+    if(u.mode&&u.mode!=='stock') setMode(u.mode);
+  }catch(e){}
+}
+
 // 側欄模式切換
 function setMode(m){
   appMode=m;
+  uiSave();
   const mBtns={stock:'modeStock',portfolio:'modePortfolio',calc:'modeCalc'};
   Object.entries(mBtns).forEach(([k,id])=>{
     const el=document.getElementById(id); if(!el) return;
@@ -1190,6 +1239,8 @@ async function runPortfolio(){
   pfSave();
   if(btn){ btn.disabled=false; btn.textContent='🔄 更新報價並分析'; }
   renderPortfolio();
+  const ok=uniq.filter(t=>pfPrices[t]&&pfPrices[t].price!=null).length;
+  if(uniq.length) toast(ok?`已更新 ${ok}/${uniq.length} 檔報價`:'報價抓取失敗，請稍後再試', ok?'success':'error');
 }
 
 // 計算市值/損益/軌道占比/產業占比
@@ -1251,7 +1302,7 @@ function renderPortfolio(){
   const tabNav=['holdings','stoploss','mkttemp','monthly','sinking','decisions'].map((k,i)=>{
     const labels=['📊 持股管理','🛑 衛星停損','🌡️ 市場溫度','📅 月度報表','🏦 沉沒基金','📈 決策追蹤'];
     const active=pfTab===k;
-    return `<button onclick="pfSwitchTab('${k}')" class="px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${active?'border-slate-800 text-slate-800':'border-transparent text-slate-400 hover:text-slate-600'}">${labels[i]}</button>`;
+    return `<button onclick="pfSwitchTab('${k}')" class="px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${active?'border-blue-600 text-blue-700':'border-transparent text-slate-400 hover:text-slate-600'}">${labels[i]}</button>`;
   }).join('');
   const trackOpt=sel=>['core','satellite','defense'].map(k=>`<option value="${k}" ${k===sel?'selected':''}>${TRACKS[k].label}</option>`).join('');
   const rowsHtml=c.rows.map((r,i)=>`<tr class="border-b border-slate-100">
@@ -1313,7 +1364,7 @@ function renderPortfolio(){
     </div>
     <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
       <div class="border-b border-slate-100 flex overflow-x-auto ns">${tabNav}</div>
-      <div class="p-4 space-y-4">${pfMainContent}</div>
+      <div class="p-4 space-y-4 fade-in">${pfMainContent}</div>
     </div>
     <p class="text-[11px] text-slate-400 text-center pt-1">⚠️ 本工具為個人紀律輔助，數據來自第三方 API，不構成投資建議。</p>
   </div>`;
@@ -1322,7 +1373,7 @@ function renderPortfolio(){
 }
 
 function drawPortfolio(c){
-  const el=document.getElementById('cvPf'); if(!el) return;
+  const el=document.getElementById('cvPf'); if(!el||typeof Chart==='undefined') return;
   if(pfChart) pfChart.destroy();
   const segs=[['core',c.byTrack.core||0],['satellite',c.byTrack.satellite||0],['defense',c.byTrack.defense||0]].filter(s=>s[1]>0);
   if(!segs.length){ pfChart=null; return; }
@@ -1419,7 +1470,7 @@ let calcChartCompound=null, calcChartDCA=null;
 
 function renderCalc(){
   const el=document.getElementById('calcPanel'); if(!el) return;
-  el.innerHTML=`<div class="max-w-4xl mx-auto space-y-4">
+  el.innerHTML=`<div class="max-w-4xl mx-auto space-y-4 fade-in">
     <div class="flex items-center gap-3 flex-wrap">
       <p class="text-base font-bold text-slate-800">🧮 投資計算器</p>
       <span class="text-xs text-slate-400">複利・定存・定期定額三合一試算工具</span>
@@ -1522,7 +1573,7 @@ function calcCompound(){
   set('c_interest','NT$'+fmtNum(interest));
   set('c_multi',(final/P).toFixed(2)+'x');
   // Chart
-  const el=document.getElementById('cvCompound'); if(!el) return;
+  const el=document.getElementById('cvCompound'); if(!el||typeof Chart==='undefined') return;
   if(calcChartCompound) calcChartCompound.destroy();
   const labels=[], principal=[], total=[];
   for(let i=0;i<=y;i++){ labels.push(i+'年'); principal.push(Math.round(P)); total.push(Math.round(P*Math.pow(1+r,i))); }
@@ -1547,7 +1598,7 @@ function calcDCA(){
   set('d_final','NT$'+fmtNum(final));
   set('d_invested','NT$'+fmtNum(invested));
   set('d_gains','NT$'+fmtNum(final-invested));
-  const el=document.getElementById('cvDCA'); if(!el) return;
+  const el=document.getElementById('cvDCA'); if(!el||typeof Chart==='undefined') return;
   if(calcChartDCA) calcChartDCA.destroy();
   const labels=[], inv=[], tot=[];
   for(let m=0;m<=n;m+=Math.max(1,Math.floor(n/40))){
@@ -1582,6 +1633,13 @@ function calcTD(){
 }
 
 pfLoad(); // 啟動載入本機組合
+uiRestore(); // 還原上次使用的模式與代號
+// 鍵盤捷徑：按 / 聚焦代號輸入框（個股模式）
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){
+    e.preventDefault(); setMode('stock'); document.getElementById('inp').focus(); document.getElementById('inp').select();
+  }
+});
 
 // ═══════════════════════════════════════════════════════════
 // v7.0 新增模組
@@ -1662,7 +1720,7 @@ function renderSatStopLoss(c){
 async function loadSatMA(){
   const c=pfCompute();
   const sats=c.rows.filter(r=>r.track==='satellite'&&r.ticker);
-  if(!sats.length){ alert('沒有衛星倉持股'); return; }
+  if(!sats.length){ toast('沒有衛星倉持股','warn'); return; }
   const btn=document.querySelector('button[onclick="loadSatMA()"]');
   if(btn){ btn.disabled=true; btn.textContent='⏳ 載入中...'; }
   await Promise.all(sats.map(async r=>{
