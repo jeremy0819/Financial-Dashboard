@@ -29,7 +29,7 @@ button:not(:disabled):active{transform:scale(.97)}
 <aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v7.0</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v7.1</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
     <!-- 模式切換 -->
@@ -75,7 +75,7 @@ button:not(:disabled):active{transform:scale(.97)}
   <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
     <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
     <div class="min-w-0">
-      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v7.0</p>
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v7.1</p>
       <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 六層次深度分析</p>
     </div>
   </header>
@@ -97,7 +97,7 @@ button:not(:disabled):active{transform:scale(.97)}
   <div id="welcome" class="flex-1 overflow-y-auto p-6 md:p-10 ns">
     <div class="max-w-2xl mx-auto flex flex-col items-center text-center">
     <p class="text-5xl mb-3">📊</p>
-    <p class="text-base font-bold text-slate-600 mb-1">AI 財務分析系統 v7.0 待命中</p>
+    <p class="text-base font-bold text-slate-600 mb-1">AI 財務分析系統 v7.1 待命中</p>
     <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 六層次深度分析 + 情境試算</p>
     <div class="flex gap-2 flex-wrap justify-center mb-4">
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🏥</p><p class="text-xs text-slate-500 mt-0.5">財務健檢</p></div>
@@ -125,6 +125,24 @@ button:not(:disabled):active{transform:scale(.97)}
     <!-- ── 更新日誌 ── -->
     <div class="w-full text-left space-y-3">
       <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">更新日誌</p>
+
+      <div class="bg-white border border-blue-200 rounded-xl p-4 ring-1 ring-blue-100">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-600 text-white">v7.1 NEW</span>
+          <span class="text-xs font-bold text-slate-700">財報狗架構移植 · 三燈健診系統</span>
+          <span class="ml-auto text-[10px] text-slate-400 tabular-nums">2026-06-11</span>
+        </div>
+        <ul class="space-y-1 text-xs text-slate-500 leading-relaxed">
+          <li>🟢 三燈健診系統（🟢健康/🟡警訊/🔴危險）整合財報狗四維分析框架</li>
+          <li>🟢 四維財務健診摘要卡：獲利性／安全性／成長性／籌碼面一覽</li>
+          <li>🟢 三率三升偵測：毛利率/營業利益率/淨利率季比季趨勢自動判讀</li>
+          <li>🟢 DDM 股利折現估值：依近5年股利歷史計算合理股價區間</li>
+          <li>🟢 季報前期利潤率計算（opMPrev/netMPrev）供三率比較使用</li>
+          <li>📐 財務健檢 Tab 重構：健診摘要 → 三率卡 → 技術訊號 → 圖表 → 策展觀點</li>
+          <li>📐 估值分析 Tab 加入 DDM 合理股價 vs 目前收盤價對比</li>
+        </ul>
+        <p class="text-[10px] text-slate-400 mt-2">參考來源：<a href="https://statementdog.com" target="_blank" class="underline hover:text-blue-500">財報狗 StatementDog</a> — 獲利性/安全性/成長性/價值評估四大框架 + 三燈健診 + DDM</p>
+      </div>
 
       <div class="bg-white border border-slate-200 rounded-xl p-4">
         <div class="flex items-center gap-2 mb-2.5">
@@ -209,7 +227,7 @@ setInterval(tick,1000); tick();
 // ─── CONFIG ──────────────────────────────────────────────
 const FM='https://api.finmindtrade.com/api/v4/data';   // FinMind：CORS開放、免金鑰
 const MODEL='claude-sonnet-4-20250514';                // 如需更新模型改這裡
-const VERSION='v7.0';
+const VERSION='v7.1';
 const PROXY_URL=null; // wire-proxy.sh 會把 null 換成你的 Worker URL（字串）
 const cache={};                                        // 結果快取（key = ticker|mode），確保一致性
 
@@ -582,6 +600,11 @@ async function fetchReal(ticker){
         if(net!=null) real.netM=net/q.Revenue*100;
       }
       real.grossMPrev=gm(qp);
+      if(qp&&qp.Revenue){
+        real.opMPrev=qp.OperatingIncome!=null?qp.OperatingIncome/qp.Revenue*100:null;
+        const netp=qp.IncomeAfterTaxes!=null?qp.IncomeAfterTaxes:qp.TotalConsolidatedProfitForThePeriod;
+        if(netp!=null) real.netMPrev=netp/qp.Revenue*100;
+      }
       if(q&&q.EPS!=null) real.eps=q.EPS;
     }
     // 三大法人（外資/投信/自營）每日淨額（張＝股/1000）
@@ -684,6 +707,85 @@ function staticBadge(src){ return srcBadge(src==='ai'?'ai':'framework'); }
 function upCls(v){ return v==null?'text-slate-800':v>0?'text-rose-600':v<0?'text-emerald-600':'text-slate-500'; }
 function toneCls(t){ return t==='good'?'bg-emerald-50 border-emerald-200 text-emerald-700':t==='bad'?'bg-rose-50 border-rose-200 text-rose-700':'bg-amber-50 border-amber-200 text-amber-700'; }
 function signalPill(s){ return s?`<div class="rounded-lg border p-2.5 ${toneCls(s.tone)}"><p class="text-xs font-bold">${s.label}</p><p class="text-[11px] opacity-80 mt-0.5">${s.note}</p></div>`:''; }
+
+// ─── V7.1 財報狗式三燈健診系統 ────────────────────────────
+function diagCfg(level){
+  return {good:{dot:'🟢',bg:'bg-emerald-50',border:'border-emerald-200',tc:'text-emerald-700',label:'健康'},
+          warn:{dot:'🟡',bg:'bg-amber-50',  border:'border-amber-200',  tc:'text-amber-600', label:'警訊'},
+          danger:{dot:'🔴',bg:'bg-red-50',  border:'border-red-200',    tc:'text-red-700',   label:'危險'}}[level]||{dot:'⚪',bg:'bg-slate-50',border:'border-slate-200',tc:'text-slate-400',label:'—'};
+}
+function diagRow(label,value,level,note=''){
+  const c=diagCfg(level);
+  return `<div class="flex items-center gap-2 py-2 border-b border-slate-100 last:border-0">
+    <span class="text-base shrink-0 w-5">${c.dot}</span>
+    <span class="flex-1 text-xs font-medium text-slate-700">${label}${note?`<span class="text-[10px] text-slate-400 ml-1">${note}</span>`:''}</span>
+    <span class="text-xs font-bold tabular-nums ${c.tc} mr-1">${value}</span>
+    <span class="text-[10px] px-1.5 py-0.5 rounded border font-bold ${c.bg} ${c.border} ${c.tc} shrink-0">${c.label}</span>
+  </div>`;
+}
+// 四維健診：獲利性/安全性/成長性/籌碼，整合為一張摘要卡（仿財報狗）
+function buildHealthDiag(d, real){
+  const rows=[];
+  // 獲利性
+  if(real){
+    const roe = real.per!=null && real.pbr!=null && real.per>0 ? +(real.pbr/real.per*100).toFixed(1) : null; // ROE≈(P/B)/(P/E)*100 approximation
+    if(real.grossM!=null) rows.push(diagRow('毛利率',real.grossM.toFixed(1)+'%', real.grossM>=30?'good':real.grossM>=15?'warn':'danger','獲利性'));
+    if(real.opM!=null)    rows.push(diagRow('營業利益率',real.opM.toFixed(1)+'%',  real.opM>=10?'good':real.opM>=0?'warn':'danger','獲利性'));
+    if(real.netM!=null)   rows.push(diagRow('稅後淨利率',real.netM.toFixed(1)+'%', real.netM>=8?'good':real.netM>=0?'warn':'danger','獲利性'));
+    // 安全性
+    if(real.fcfReal){
+      const fcfOk=real.fcfReal.fcf>0;
+      rows.push(diagRow('自由現金流(FCF)',fmtBig(real.fcfReal.fcf)+'億', fcfOk?'good':'danger','安全性'));
+    }
+    if(real.per!=null && real.pbr!=null){
+      const debtLevel = real.pbr>3?'warn':real.pbr>6?'danger':'good';
+      rows.push(diagRow('P/B 股價淨值比', real.pbr+'x', real.pbr<2?'good':real.pbr<4?'warn':'danger','安全性'));
+    }
+    // 成長性
+    if(real.revYoY!=null) rows.push(diagRow('月營收年增率',pct(real.revYoY), real.revYoY>=10?'good':real.revYoY>=0?'warn':'danger','成長性'));
+    const tri=calcTripleRate(real);
+    if(tri) rows.push(diagRow('三率趨勢 QoQ', tri.trend==='triple_up'?'三率全升↑':tri.trend==='double_up'?`${tri.rising}率上升↑`:tri.trend==='triple_down'?'三率全降↓':tri.trend==='double_down'?`${tri.falling}率下降↓`:'持平',
+      tri.trend==='triple_up'?'good':tri.trend==='double_up'?'good':tri.trend==='triple_down'?'danger':tri.trend==='double_down'?'warn':'warn','成長性'));
+    // 籌碼
+    if(real.signals&&real.signals.chip) rows.push(diagRow('外資籌碼',real.signals.chip.label,real.signals.chip.tone==='good'?'good':real.signals.chip.tone==='bad'?'danger':'warn','籌碼'));
+  } else {
+    // 純DB模式：用策展分數
+    const sc=d.score||60;
+    rows.push(diagRow('整體財務評分',sc+' / 100', sc>=70?'good':sc>=50?'warn':'danger',''));
+  }
+  if(!rows.length) return '';
+  return card(`<div class="flex items-center gap-2 mb-3"><span class="text-xs font-bold text-slate-700">🏥 財務健診摘要</span>${real?dataBadge(real.finDate||real.asOf):srcBadge('framework')}</div>${rows.join('')}`);
+}
+// 三率趨勢計算（季比季）
+function calcTripleRate(real){
+  if(!real) return null;
+  const items=[
+    {k:'gross',cur:real.grossM,prev:real.grossMPrev},
+    {k:'op',   cur:real.opM,   prev:real.opMPrev},
+    {k:'net',  cur:real.netM,  prev:real.netMPrev}
+  ].map(x=>({...x, chg:(x.cur!=null&&x.prev!=null)?x.cur-x.prev:null})).filter(x=>x.chg!=null);
+  if(!items.length) return null;
+  const rising=items.filter(x=>x.chg>=0.1).length;
+  const falling=items.filter(x=>x.chg<=-0.1).length;
+  const trend=rising>=3?'triple_up':rising>=2?'double_up':falling>=3?'triple_down':falling>=2?'double_down':'flat';
+  return {items,rising,falling,trend};
+}
+// DDM 股利折現模型（仿財報狗）
+function calcDDM(real){
+  if(!real||!real.divHist||real.divHist.length<2) return null;
+  const h=real.divHist;
+  const d0=h[0].cash, dN=h[h.length-1].cash;
+  if(!d0||!dN||dN<=0) return null;
+  const years=h.length-1;
+  const g=years>0?Math.pow(dN/d0,1/years)-1:0;
+  const gCapped=Math.min(Math.max(g,-0.02),0.07);
+  const req=0.09; // 必要報酬率 9%
+  if(req<=gCapped) return null;
+  const D1=dN*(1+gCapped);
+  const intrinsic=+(D1/(req-gCapped)).toFixed(1);
+  return {intrinsic,g:+(gCapped*100).toFixed(1),req:+(req*100).toFixed(1),D1:+D1.toFixed(2),divNow:dN};
+}
+
 function toggleSidebar(show){
   const sb=document.getElementById('sidebar'), bd=document.getElementById('backdrop');
   const open = show===undefined ? sb.classList.contains('-translate-x-full') : show;
@@ -698,6 +800,32 @@ function tabHealth(d){
   const scCol=sc>=70?'text-emerald-600':sc>=50?'text-amber-600':'text-red-600';
   const r=d.real, sg=r?r.signals:null;
   const noReal = r?'':`<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">⚠️ 即時數據抓取失敗（網路／代號／API 限流），以下為策展靜態觀點，數字可能過時。<button onclick="run()" class="ml-1 underline text-blue-600 font-bold">重試</button></div>`;
+
+  // ── 三燈健診摘要（仿財報狗）──
+  const healthDiagCard = buildHealthDiag(d, r);
+
+  // ── 三率趨勢卡（財報狗特色：毛利/營業/淨利 QoQ）──
+  const tri = r ? calcTripleRate(r) : null;
+  const triCard = tri ? card(`
+    <div class="flex items-center gap-2 mb-3">
+      <span class="text-xs font-bold text-slate-700">📉 三率趨勢（季比季）</span>${dataBadge(r.finDate)}
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      ${[{label:'毛利率',cur:tri.items.find(x=>x.k==='gross')},{label:'營業利益率',cur:tri.items.find(x=>x.k==='op')},{label:'稅後淨利率',cur:tri.items.find(x=>x.k==='net')}].map(({label,cur})=>{
+        if(!cur) return `<div class="bg-slate-50 rounded-lg p-2 text-center"><p class="text-[10px] text-slate-400">${label}</p><p class="text-xs text-slate-400">—</p></div>`;
+        const arrow=cur.chg>=0.1?'↑':cur.chg<=-0.1?'↓':'→';
+        const cls=cur.chg>=0.1?'text-emerald-600 font-bold':cur.chg<=-0.1?'text-rose-600 font-bold':'text-slate-500';
+        return `<div class="bg-slate-50 rounded-lg p-2 text-center">
+          <p class="text-[10px] text-slate-400 mb-0.5">${label}</p>
+          <p class="text-sm font-bold tabular-nums text-slate-800">${cur.cur.toFixed(1)}%</p>
+          <p class="text-xs ${cls}">${arrow} ${(cur.chg>=0?'+':'')+cur.chg.toFixed(1)}pt</p>
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="text-[11px] text-slate-400 mt-2">
+      ${tri.trend==='triple_up'?'🟢 三率全部上升，獲利品質改善中':tri.trend==='double_up'?`🟡 ${tri.rising} 率上升，趨勢偏正`:tri.trend==='triple_down'?'🔴 三率全部下滑，獲利惡化警訊':tri.trend==='double_down'?`🟡 ${tri.falling} 率下滑，需觀察`:'→ 三率大致持平，無明顯趨勢'}
+    </p>`) : '';
+
   const sigCard = (sg&&(sg.tech||sg.val||sg.rev||sg.margin||sg.chip)) ? card(`<div class="flex items-center gap-2 mb-2"><span class="text-xs font-bold text-slate-600">📡 即時數據訊號</span>${dataBadge(r.asOf)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${signalPill(sg.tech)}${signalPill(sg.val)}${signalPill(sg.rev)}${signalPill(sg.margin)}${signalPill(sg.chip)}</div>`) : '';
   const radarCard = card(`<p class="text-xs font-bold text-slate-600 mb-2">🕸️ 六維評分雷達圖</p><div style="position:relative;height:280px;width:100%"><canvas id="cvRadar"></canvas></div>`);
   const chartCard = (r&&r.tech) ? card(`<p class="text-xs font-bold text-slate-600 mb-2">📈 技術均線圖（日收盤 + 5/10/月/季/半年線）${dataBadge(r.priceDate)}</p><div style="position:relative;height:300px;width:100%"><canvas id="cvTech"></canvas></div>`) : '';
@@ -716,12 +844,14 @@ function tabHealth(d){
   const fcfStr = (r&&r.fcfReal) ? `${fmtBig(r.fcfReal.fcf)}<span class="text-[10px] text-slate-400 ml-1">（營業現金流 ${fmtBig(r.fcfReal.ocf)}${r.fcfReal.capex!=null?' − 資本支出 '+fmtBig(Math.abs(r.fcfReal.capex)):''}，${fmtDate(r.fcfReal.date)} 當年累計）</span>` : d.fcf;
   return `<div class="max-w-3xl space-y-3">
     ${noReal}
+    ${healthDiagCard}
+    ${triCard}
     ${sigCard}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${radarCard}${chartCard||'<div></div>'}</div>
     ${revCard}
     ${chipCard}
     <div class="flex items-center gap-2 flex-wrap pt-1">
-      <span class="text-sm font-bold text-slate-700">財務評分與摘要</span>${srcBadge('framework')}
+      <span class="text-sm font-bold text-slate-700">策展觀點摘要</span>${srcBadge('framework')}
     </div>
     ${card(`
       <div class="flex justify-between items-center mb-2">
@@ -753,21 +883,41 @@ function tabValuation(d){
     </div>
     ${r.signals&&r.signals.val?signalPill(r.signals.val):''}` : '';
   const gap = (r&&r.price!=null) ? `<p class="text-xs text-amber-700 bg-amber-50 rounded-lg p-2 mt-2">⚠️ 此 DCF／結論為靜態策展數據，與最新收盤 ${r.priceStr} 可能落差大，僅供質化參考。</p>` : '';
-  const divBlock = (r&&(r.cashYield!=null||r.divHist)) ? `<div class="flex items-center gap-2 mt-2 mb-1"><span class="text-sm font-bold text-slate-700">💵 股利政策</span><span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700">FinMind 股利</span></div>
+  const divBlock = (r&&(r.cashYield!=null||r.divHist)) ? `<div class="flex items-center gap-2 mt-2 mb-1"><span class="text-sm font-bold text-slate-700">💵 股利政策</span>${dataBadge(r.asOf)}</div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">現金殖利率(近12月)</p><p class="text-xl font-bold text-emerald-600 tabular-nums">${r.cashYield!=null?r.cashYield+'%':'—'}</p>`)}
       ${r.divHist?r.divHist.slice(-3).reverse().map(h=>card(`<p class="text-xs text-slate-400 mb-1">${h.y} 現金股利</p><p class="text-lg font-bold text-slate-800 tabular-nums">${h.cash}</p>`)).join(''):''}
     </div>` : '';
+  // DDM 股利折現估值
+  const ddm = r ? calcDDM(r) : null;
+  const ddmBlock = ddm ? card(`
+    <div class="flex items-center gap-2 mb-3"><span class="text-xs font-bold text-slate-700">🧮 DDM 股利折現估值</span>${srcBadge('data')}
+      <span class="text-[10px] text-slate-400 ml-auto">必要報酬率 ${ddm.req}%，股利成長率 ${ddm.g}%</span>
+    </div>
+    <div class="flex items-center gap-6 flex-wrap">
+      <div><p class="text-xs text-slate-400 mb-0.5">DDM 合理股價</p>
+        <p class="text-2xl font-bold text-purple-700 tabular-nums">${r.isTW?'NT$':'$'}${ddm.intrinsic.toLocaleString()}</p></div>
+      <span class="text-lg text-slate-300">vs</span>
+      <div><p class="text-xs text-slate-400 mb-0.5">目前股價</p>
+        <p class="text-2xl font-bold tabular-nums ${r.price<ddm.intrinsic?'text-emerald-600':'text-rose-500'}">${r.priceStr||'—'}</p></div>
+      <div class="ml-auto ${r.price<ddm.intrinsic?'bg-emerald-50 border-emerald-200 text-emerald-700':'bg-rose-50 border-rose-200 text-rose-700'} border rounded-xl px-4 py-2 text-center">
+        <p class="text-[10px] font-bold">${r.price<ddm.intrinsic?'低於合理價':'高於合理價'}</p>
+        <p class="text-base font-bold tabular-nums">${r.price&&ddm.intrinsic?((r.price/ddm.intrinsic-1)*100>0?'+':'')+((r.price/ddm.intrinsic-1)*100).toFixed(1)+'%':'—'}</p>
+      </div>
+    </div>
+    <p class="text-[11px] text-slate-400 mt-2">基於近 ${r.divHist.length} 年股利歷史，D₁=${r.isTW?'NT$':'$'}${ddm.D1}，僅適用穩定配息個股。</p>
+  `) : '';
   return `<div class="max-w-2xl space-y-3">
     ${realBlock}
     ${divBlock}
+    ${ddmBlock}
     <div class="flex items-center gap-2 flex-wrap pt-1"><span class="text-sm font-bold text-slate-700">估值觀點</span>${srcBadge('framework')}</div>
     <div class="grid grid-cols-2 gap-2">
       ${card(`<p class="text-xs text-slate-400 mb-1">同業平均 P/E</p><p class="text-lg font-bold text-slate-800">${d.ipe}</p>`,'border-dashed')}
       ${card(`<p class="text-xs text-slate-400 mb-1">策展估值結論</p><p class="text-lg font-bold text-${d.verd==='U'?'emerald':d.verd==='O'?'rose':'amber'}-600">${d.verdz}</p>`,'border-dashed')}
     </div>
     ${card(`
-      <p class="text-xs font-bold text-slate-600 mb-3">💡 DCF 折現現金流估值</p>
+      <p class="text-xs font-bold text-slate-600 mb-3">💡 DCF 折現現金流估值（策展）</p>
       <div class="flex items-center gap-6">
         <div><p class="text-xs text-slate-400">DCF 合理價</p><p class="text-lg font-bold text-blue-600 tabular-nums">${d.dcf}</p></div>
         <span class="text-lg text-slate-300">vs</span>
@@ -1261,7 +1411,7 @@ function setMode(m){
     document.getElementById('welcome').classList.toggle('hidden', !!curData);
     document.getElementById('results').classList.toggle('hidden', !curData);
     document.getElementById('results').classList.toggle('flex', !!curData);
-    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v7.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
+    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v7.1'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
   } else {
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('results').classList.add('hidden'); document.getElementById('results').classList.remove('flex');
