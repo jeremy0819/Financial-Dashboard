@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI 財務健檢系統 v7.0 | 台灣投資理財</title>
+<title>AI 財務健檢系統 v8.0 | 台灣投資理財</title>
 <meta name="description" content="輸入台股/美股代號，抓取 FinMind 日收盤數據，產生六層次深度分析報告。內建核心-衛星雙軌制資產管理與投資計算器。">
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
@@ -29,7 +29,7 @@ button:not(:disabled):active{transform:scale(.97)}
 <aside id="sidebar" class="w-52 bg-slate-900 flex flex-col shrink-0 fixed md:static inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200">
   <div class="p-4 border-b border-slate-800">
     <p class="text-sm font-bold text-white">🏗️ 財務健檢系統</p>
-    <p class="text-xs text-emerald-400 mt-1 font-mono">● 日收盤數據 v7.1</p>
+    <p class="text-xs text-emerald-400 mt-1 font-mono">● 個人財務 OS v8.0</p>
   </div>
   <div class="p-4 flex-1 flex flex-col gap-4 overflow-auto ns">
     <!-- 模式切換 -->
@@ -37,6 +37,8 @@ button:not(:disabled):active{transform:scale(.97)}
       <button id="modeStock" onclick="setMode('stock')" class="text-xs font-bold py-1.5 rounded-md bg-blue-600 text-white transition-colors">📈 個股分析</button>
       <button id="modePortfolio" onclick="setMode('portfolio')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">📁 個人資產</button>
       <button id="modeCalc" onclick="setMode('calc')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">🧮 投資計算器</button>
+      <button id="modeNetworth" onclick="setMode('networth')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">💰 淨資產追蹤</button>
+      <button id="modeMarket" onclick="setMode('market')" class="text-xs font-bold py-1.5 rounded-md text-slate-400 hover:text-white transition-colors">🌍 市場快報</button>
     </div>
     <div class="bg-slate-800 rounded-lg p-3 border border-slate-700">
       <p class="text-xs text-slate-400 font-mono mb-0.5">分析時間戳記</p>
@@ -62,7 +64,7 @@ button:not(:disabled):active{transform:scale(.97)}
   </div>
   <div class="p-3 border-t border-slate-800 text-xs text-slate-700">
     <p>數據來源：FinMind（日收盤）</p>
-    <p class="mt-0.5">Architecture meets Finance v7.0</p>
+    <p class="mt-0.5">Personal Finance OS v8.0</p>
     <p class="mt-1 text-slate-600">⚠️ 僅供參考，非投資建議</p>
   </div>
 </aside>
@@ -75,7 +77,7 @@ button:not(:disabled):active{transform:scale(.97)}
   <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3 shrink-0 flex items-center gap-3">
     <button class="md:hidden text-xl text-slate-600 shrink-0" onclick="toggleSidebar()" aria-label="選單">☰</button>
     <div class="min-w-0">
-      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v7.1</p>
+      <p id="hTitle" class="text-base font-bold text-slate-800 truncate">🏗️ AI 股票財務健檢系統 v8.0</p>
       <p id="hSub" class="text-xs text-slate-400 mt-0.5">輸入股票代號，抓取日收盤財報 + 六層次深度分析</p>
     </div>
   </header>
@@ -97,8 +99,8 @@ button:not(:disabled):active{transform:scale(.97)}
   <div id="welcome" class="flex-1 overflow-y-auto p-6 md:p-10 ns">
     <div class="max-w-2xl mx-auto flex flex-col items-center text-center">
     <p class="text-5xl mb-3">📊</p>
-    <p class="text-base font-bold text-slate-600 mb-1">AI 財務分析系統 v7.1 待命中</p>
-    <p class="text-sm text-slate-400 mb-6">抓取即時財報數據 → 六層次深度分析 + 情境試算</p>
+    <p class="text-base font-bold text-slate-600 mb-1">個人財務 OS v8.0 待命中</p>
+    <p class="text-sm text-slate-400 mb-6">六層次股票分析 · 淨資產追蹤 · 即時市場快報</p>
     <div class="flex gap-2 flex-wrap justify-center mb-4">
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">🏥</p><p class="text-xs text-slate-500 mt-0.5">財務健檢</p></div>
       <div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-center w-20"><p class="text-xl">📊</p><p class="text-xs text-slate-500 mt-0.5">估值分析</p></div>
@@ -125,6 +127,23 @@ button:not(:disabled):active{transform:scale(.97)}
     <!-- ── 更新日誌 ── -->
     <div class="w-full text-left space-y-3">
       <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">更新日誌</p>
+
+      <div class="bg-white border border-violet-200 rounded-xl p-4 ring-1 ring-violet-100">
+        <div class="flex items-center gap-2 mb-2.5">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-600 text-white">v8.0 NEW</span>
+          <span class="text-xs font-bold text-slate-700">個人財務 OS · 淨資產追蹤 + 市場快報</span>
+          <span class="ml-auto text-[10px] text-slate-400 tabular-nums">2026-06-19</span>
+        </div>
+        <ul class="space-y-1 text-xs text-slate-500 leading-relaxed">
+          <li>💰 <strong class="text-slate-700">淨資產追蹤</strong>：每月快照（8類資產＋負債），長期趨勢線，MoM/YoY 對比</li>
+          <li>🥧 資產配置甜甜圈圖：現金/銀行/台股/美股/加密/不動產/其他 視覺化</li>
+          <li>🏥 財務配置健診：5項自動檢核（備用金/集中度/美股配置/加密上限/流動性）</li>
+          <li>🌍 <strong class="text-slate-700">市場快報</strong>：即時 BTC/ETH/SOL 報價（CoinGecko）+ USD/JPY/EUR/CNY 匯率</li>
+          <li>😨 加密恐懼貪婪指數（Alternative.me）帶視覺進度條</li>
+          <li>📰 H2 2026 市場觀察摘要（台股/美股/加密/匯率）</li>
+          <li>🔧 側欄新增兩個模式按鈕，setMode 重構支援 5 種模式</li>
+        </ul>
+      </div>
 
       <div class="bg-white border border-blue-200 rounded-xl p-4 ring-1 ring-blue-100">
         <div class="flex items-center gap-2 mb-2.5">
@@ -212,6 +231,12 @@ button:not(:disabled):active{transform:scale(.97)}
   <!-- Calculator 投資計算器 -->
   <div id="calcPanel" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
 
+  <!-- 淨資產追蹤 -->
+  <div id="networthPanel" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
+
+  <!-- 市場快報 -->
+  <div id="marketPanel" class="hidden flex-1 overflow-y-auto p-4 md:p-6 ns"></div>
+
 </main>
 
 <script>
@@ -227,7 +252,7 @@ setInterval(tick,1000); tick();
 // ─── CONFIG ──────────────────────────────────────────────
 const FM='https://api.finmindtrade.com/api/v4/data';   // FinMind：CORS開放、免金鑰
 const MODEL='claude-sonnet-4-20250514';                // 如需更新模型改這裡
-const VERSION='v7.1';
+const VERSION='v8.0';
 const PROXY_URL=null; // wire-proxy.sh 會把 null 換成你的 Worker URL（字串）
 const cache={};                                        // 結果快取（key = ticker|mode），確保一致性
 
@@ -1399,30 +1424,42 @@ function uiRestore(){
 function setMode(m){
   appMode=m;
   uiSave();
-  const mBtns={stock:'modeStock',portfolio:'modePortfolio',calc:'modeCalc'};
+  const mBtns={stock:'modeStock',portfolio:'modePortfolio',calc:'modeCalc',networth:'modeNetworth',market:'modeMarket'};
   Object.entries(mBtns).forEach(([k,id])=>{
     const el=document.getElementById(id); if(!el) return;
     el.className='text-xs font-bold py-1.5 rounded-md transition-colors '+(k===m?'bg-blue-600 text-white':'text-slate-400 hover:text-white');
   });
+  const allPanels=['portfolio','calcPanel','networthPanel','marketPanel'];
+  allPanels.forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('stockControls').classList.toggle('hidden', m!=='stock');
-  document.getElementById('portfolio').classList.toggle('hidden', m!=='portfolio');
-  document.getElementById('calcPanel').classList.toggle('hidden', m!=='calc');
   if(m==='stock'){
     document.getElementById('welcome').classList.toggle('hidden', !!curData);
     document.getElementById('results').classList.toggle('hidden', !curData);
     document.getElementById('results').classList.toggle('flex', !!curData);
-    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v7.1'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
+    if(!curData){ document.getElementById('hTitle').textContent='🏗️ AI 股票財務健檢系統 v8.0'; document.getElementById('hSub').textContent='輸入股票代號，抓取日收盤財報 + 六層次深度分析'; }
   } else {
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('results').classList.add('hidden'); document.getElementById('results').classList.remove('flex');
     if(m==='portfolio'){
+      document.getElementById('portfolio').classList.remove('hidden');
       document.getElementById('hTitle').textContent='📁 個人資產分析 · 核心-衛星雙軌制';
       document.getElementById('hSub').textContent='資料只存本機瀏覽器 ｜ 報價來源 FinMind 日收盤';
       renderPortfolio();
-    } else {
+    } else if(m==='calc'){
+      document.getElementById('calcPanel').classList.remove('hidden');
       document.getElementById('hTitle').textContent='🧮 投資計算器';
       document.getElementById('hSub').textContent='複利試算・定存試算・定期定額試算';
       renderCalc();
+    } else if(m==='networth'){
+      document.getElementById('networthPanel').classList.remove('hidden');
+      document.getElementById('hTitle').textContent='💰 淨資產追蹤';
+      document.getElementById('hSub').textContent='每月快照 · 趨勢圖 · 配置健診 ｜ 資料只存本機';
+      renderNetworth();
+    } else if(m==='market'){
+      document.getElementById('marketPanel').classList.remove('hidden');
+      document.getElementById('hTitle').textContent='🌍 市場快報';
+      document.getElementById('hSub').textContent='即時加密貨幣 · 外匯匯率 · 市場情緒';
+      renderMarket();
     }
   }
   toggleSidebar(false);
@@ -1841,6 +1878,337 @@ function calcTD(){
 
 pfLoad(); // 啟動載入本機組合
 uiRestore(); // 還原上次使用的模式與代號
+
+// ═══════════════════════════════════════════════════════════
+// v8.0 新增模組：淨資產追蹤 + 市場快報
+// ═══════════════════════════════════════════════════════════
+
+// ─── 淨資產追蹤 ──────────────────────────────────────────
+const NW_KEY='kaku_networth_v1';
+function getNWData(){ try{ return JSON.parse(localStorage.getItem(NW_KEY)||'[]'); }catch(e){ return []; } }
+function saveNWData(d){ try{ localStorage.setItem(NW_KEY,JSON.stringify(d)); }catch(e){} }
+let nwChart=null,nwPieChart=null;
+
+function nwNetWorth(s){ return (s.cash||0)+(s.bank||0)+(s.twStock||0)+(s.usStock||0)+(s.crypto||0)+(s.other||0)+(s.realEstate||0)-(s.debt||0); }
+
+function nwSaveField(ym,field,val){
+  const data=getNWData();
+  let snap=data.find(s=>s.ym===ym);
+  if(!snap){ snap={ym,cash:0,bank:0,twStock:0,usStock:0,crypto:0,realEstate:0,other:0,debt:0}; data.push(snap); }
+  snap[field]=Number(val)||0;
+  data.sort((a,b)=>a.ym<b.ym?-1:1);
+  saveNWData(data);
+  // refresh summary numbers without full re-render
+  const nw=nwNetWorth(snap);
+  const el=document.getElementById('nw_total'); if(el) el.textContent='NT$'+Math.round(nw).toLocaleString();
+  const sorted=data.slice().sort((a,b)=>a.ym<b.ym?-1:1);
+  nwDrawPie(snap);
+  if(sorted.length>=2) nwDrawLine(sorted);
+  nwUpdateChecks(snap);
+}
+
+function nwDrawLine(sorted){
+  const el=document.getElementById('cvNWLine'); if(!el||typeof Chart==='undefined') return;
+  if(nwChart){ nwChart.destroy(); nwChart=null; }
+  const pts=sorted.slice(-12);
+  nwChart=new Chart(el.getContext('2d'),{
+    type:'line',
+    data:{
+      labels:pts.map(s=>s.ym),
+      datasets:[{label:'淨資產',data:pts.map(s=>nwNetWorth(s)),
+        borderColor:'rgba(59,130,246,0.9)',backgroundColor:'rgba(59,130,246,0.08)',
+        fill:true,tension:0.4,pointRadius:4,borderWidth:2.5}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'NT$'+Math.round(ctx.parsed.y).toLocaleString()}}},
+      scales:{
+        y:{ticks:{callback:v=>'NT$'+(v/1000).toFixed(0)+'k',font:{size:9},color:'#94a3b8'},grid:{color:'#f1f5f9'}},
+        x:{ticks:{font:{size:9},color:'#94a3b8'},grid:{display:false}}
+      }}
+  });
+}
+
+function nwDrawPie(snap){
+  const el=document.getElementById('cvNWPie'); if(!el||typeof Chart==='undefined') return;
+  if(nwPieChart){ nwPieChart.destroy(); nwPieChart=null; }
+  const cats=[
+    {label:'現金',value:snap.cash||0,color:'#94a3b8'},
+    {label:'銀行存款',value:snap.bank||0,color:'#3b82f6'},
+    {label:'台股',value:snap.twStock||0,color:'#10b981'},
+    {label:'美股',value:snap.usStock||0,color:'#8b5cf6'},
+    {label:'加密貨幣',value:snap.crypto||0,color:'#f59e0b'},
+    {label:'不動產',value:snap.realEstate||0,color:'#ec4899'},
+    {label:'其他投資',value:snap.other||0,color:'#6b7280'},
+  ].filter(c=>c.value>0);
+  if(!cats.length) return;
+  nwPieChart=new Chart(el.getContext('2d'),{
+    type:'doughnut',
+    data:{labels:cats.map(c=>c.label),datasets:[{data:cats.map(c=>c.value),backgroundColor:cats.map(c=>c.color),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{position:'right',labels:{font:{size:10},color:'#475569',boxWidth:12}}},
+      cutout:'60%'}
+  });
+}
+
+function nwUpdateChecks(snap){
+  const el=document.getElementById('nwChecks'); if(!el) return;
+  const totalAssets=(snap.cash||0)+(snap.bank||0)+(snap.twStock||0)+(snap.usStock||0)+(snap.crypto||0)+(snap.other||0)+(snap.realEstate||0);
+  const twPct=totalAssets?(snap.twStock||0)/totalAssets*100:0;
+  const usPct=totalAssets?(snap.usStock||0)/totalAssets*100:0;
+  const cryptoPct=totalAssets?(snap.crypto||0)/totalAssets*100:0;
+  const liquidPct=totalAssets?((snap.cash||0)+(snap.bank||0))/totalAssets*100:0;
+  const checks=[
+    {label:'緊急備用金 ≥ 3個月 (~NT$90k)',ok:(snap.cash||0)+(snap.bank||0)>=90000,detail:`目前 NT$${((snap.cash||0)+(snap.bank||0)).toLocaleString()}`},
+    {label:'台股集中度 < 60%',ok:twPct<60,detail:`目前 ${twPct.toFixed(1)}%`},
+    {label:'美股配置 ≥ 15%',ok:usPct>=15,detail:`目前 ${usPct.toFixed(1)}%`},
+    {label:'加密資產 ≤ 7%',ok:cryptoPct<=7,detail:`目前 ${cryptoPct.toFixed(1)}%`},
+    {label:'流動性（現金+銀行） ≥ 8%',ok:liquidPct>=8,detail:`目前 ${liquidPct.toFixed(1)}%`},
+  ];
+  el.innerHTML=checks.map(c=>`
+    <div class="flex items-center gap-2 text-xs py-1.5 border-b border-slate-50 last:border-0">
+      <span class="text-sm">${c.ok?'🟢':'🔴'}</span>
+      <span class="font-medium text-slate-700 flex-1">${c.label}</span>
+      <span class="text-slate-400 tabular-nums">${c.detail}</span>
+    </div>`).join('');
+}
+
+function renderNetworth(){
+  const panel=document.getElementById('networthPanel');
+  const data=getNWData();
+  const now=new Date(), ym=`${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  let snap=data.find(s=>s.ym===ym);
+  if(!snap){ snap={ym,cash:0,bank:0,twStock:0,usStock:0,crypto:0,realEstate:0,other:0,debt:0}; data.push(snap); data.sort((a,b)=>a.ym<b.ym?-1:1); saveNWData(data); }
+  const nw=nwNetWorth(snap);
+  const sorted=data.slice().sort((a,b)=>a.ym<b.ym?-1:1);
+  const myIdx=sorted.findIndex(s=>s.ym===ym);
+  const prev=myIdx>0?sorted[myIdx-1]:null;
+  const momChange=prev?nw-nwNetWorth(prev):null;
+  const momPct=prev&&nwNetWorth(prev)?((nw/nwNetWorth(prev))-1)*100:null;
+  const prevYm=`${now.getFullYear()-1}-${pad(now.getMonth()+1)}`;
+  const prevYear=data.find(s=>s.ym===prevYm);
+  const yoyChange=prevYear?nw-nwNetWorth(prevYear):null;
+  const totalAssets=(snap.cash||0)+(snap.bank||0)+(snap.twStock||0)+(snap.usStock||0)+(snap.crypto||0)+(snap.other||0)+(snap.realEstate||0);
+
+  const inp=(field,val,label)=>`
+    <div class="flex items-center gap-2 text-xs">
+      <span class="text-slate-500 w-20 shrink-0">${label}</span>
+      <input type="number" value="${val||''}" placeholder="0" onchange="nwSaveField('${ym}','${field}',this.value)"
+        class="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-right tabular-nums focus:outline-none focus:border-blue-400">
+    </div>`;
+
+  const histRows=sorted.slice(-6).reverse().map(s=>{
+    const snw=nwNetWorth(s);
+    const inv=(s.twStock||0)+(s.usStock||0)+(s.crypto||0)+(s.other||0);
+    return `<tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+      <td class="py-2 px-3 text-xs text-slate-500 font-mono">${s.ym}</td>
+      <td class="py-2 px-3 text-xs text-right font-bold tabular-nums text-slate-700">NT$${Math.round(snw).toLocaleString()}</td>
+      <td class="py-2 px-3 text-xs text-right tabular-nums text-blue-600">NT$${Math.round(inv).toLocaleString()}</td>
+      <td class="py-2 px-3 text-xs text-right tabular-nums text-slate-400">NT$${Math.round((s.cash||0)+(s.bank||0)).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML=`<div class="max-w-4xl mx-auto space-y-4 fade-in">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div>
+        <p class="text-lg font-bold text-slate-700">💰 淨資產追蹤</p>
+        <p class="text-xs text-slate-400 mt-0.5">每月一次快照，長期追蹤財富曲線 ｜ 資料只存本機</p>
+      </div>
+      <div class="text-right">
+        <p class="text-[10px] text-slate-400 uppercase tracking-wide">${ym} 淨資產</p>
+        <p id="nw_total" class="text-2xl font-bold text-blue-700 tabular-nums">NT$${Math.round(nw).toLocaleString()}</p>
+        ${momChange!==null?'<p class="text-xs '+(momChange>=0?'text-emerald-600':'text-red-500')+' tabular-nums font-bold">'+(momChange>=0?'▲':'▼')+' NT$'+Math.abs(Math.round(momChange)).toLocaleString()+' MoM '+(momPct!==null?'('+(momPct>=0?'+':'')+momPct.toFixed(1)+'%)':'')+'</p>':''}
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      ${[
+        {label:'總資產',val:totalAssets,color:'slate'},
+        {label:'投資資產',val:(snap.twStock||0)+(snap.usStock||0)+(snap.crypto||0)+(snap.other||0),color:'blue'},
+        {label:'流動現金',val:(snap.cash||0)+(snap.bank||0),color:'emerald'},
+        {label:yoyChange!==null?'YoY 變化':'總負債',val:yoyChange!==null?yoyChange:-(snap.debt||0),color:yoyChange!==null?(yoyChange>=0?'emerald':'red'):(snap.debt?'red':'slate'),prefix:yoyChange!==null?(yoyChange>=0?'▲ NT$':'▼ NT$'):'NT$'}
+      ].map(k=>`<div class="bg-white border border-slate-200 rounded-xl p-3 transition-shadow hover:shadow-sm">
+        <p class="text-[10px] text-slate-400 mb-1">${k.label}</p>
+        <p class="text-sm font-bold tabular-nums text-${k.color}-600">${k.val!=null?(k.prefix||'NT$')+Math.abs(Math.round(k.val)).toLocaleString():'—'}</p>
+      </div>`).join('')}
+    </div>
+
+    <!-- Input + Pie -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+        <p class="text-xs font-bold text-slate-600 mb-3">📝 更新 ${ym} 快照</p>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">資產（TWD）</p>
+        ${inp('cash',snap.cash,'💵 現金')}
+        ${inp('bank',snap.bank,'🏦 銀行存款')}
+        ${inp('twStock',snap.twStock,'🇹🇼 台股')}
+        ${inp('usStock',snap.usStock,'🇺🇸 美股')}
+        ${inp('crypto',snap.crypto,'₿ 加密貨幣')}
+        ${inp('realEstate',snap.realEstate,'🏠 不動產')}
+        ${inp('other',snap.other,'📦 其他投資')}
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide pt-1">負債（TWD）</p>
+        ${inp('debt',snap.debt,'💳 總負債')}
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col">
+        <p class="text-xs font-bold text-slate-600 mb-3">🥧 資產配置</p>
+        <div class="flex-1 min-h-0" style="height:220px"><canvas id="cvNWPie"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Trend -->
+    ${sorted.length>=2?`
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <p class="text-xs font-bold text-slate-600 mb-3">📈 淨資產趨勢（近 12 個月）</p>
+      <div style="height:180px"><canvas id="cvNWLine"></canvas></div>
+    </div>`:`
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700">
+      💡 輸入本月數據並在下個月再次更新後，將自動生成趨勢曲線。建議每月底更新一次。
+    </div>`}
+
+    <!-- Health Checks -->
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <p class="text-xs font-bold text-slate-600 mb-3">🏥 財務配置健診</p>
+      <div id="nwChecks"></div>
+    </div>
+
+    <!-- History -->
+    ${sorted.length>0?`
+    <div class="bg-white border border-slate-200 rounded-xl p-4">
+      <p class="text-xs font-bold text-slate-600 mb-3">📋 歷史快照（最近 6 筆）</p>
+      <div class="overflow-x-auto"><table class="w-full">
+        <thead><tr class="text-[10px] text-slate-400 uppercase border-b border-slate-200">
+          <th class="text-left px-3 pb-2">月份</th>
+          <th class="text-right px-3 pb-2">淨資產</th>
+          <th class="text-right px-3 pb-2">投資合計</th>
+          <th class="text-right px-3 pb-2">現金+銀行</th>
+        </tr></thead>
+        <tbody>${histRows}</tbody>
+      </table></div>
+    </div>`:''}
+
+    <p class="text-[11px] text-slate-400 text-center pb-4">⚠️ 資料僅存於您的瀏覽器本機，不會上傳至任何伺服器。僅供個人記錄，非投資建議。</p>
+  </div>`;
+
+  setTimeout(()=>{ nwDrawPie(snap); if(sorted.length>=2) nwDrawLine(sorted); nwUpdateChecks(snap); },60);
+}
+
+// ─── 市場快報 ─────────────────────────────────────────────
+let mktCache=null, mktCacheTs=0;
+
+async function fetchMktData(){
+  if(mktCache&&Date.now()-mktCacheTs<60000) return mktCache;
+  try{
+    const [crypto,fx,fg]=await Promise.all([
+      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=twd,usd&include_24hr_change=true').then(r=>r.json()),
+      fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()),
+      fetch('https://api.alternative.me/fng/').then(r=>r.json())
+    ]);
+    mktCache={crypto,fx,fg}; mktCacheTs=Date.now();
+    return mktCache;
+  }catch(e){ return null; }
+}
+
+async function renderMarket(){
+  const panel=document.getElementById('marketPanel');
+  panel.innerHTML=`<div class="max-w-4xl mx-auto space-y-4 fade-in">
+    <div class="flex items-center justify-between">
+      <div><p class="text-lg font-bold text-slate-700">🌍 市場快報</p>
+        <p class="text-xs text-slate-400 mt-0.5">即時加密報價 · 外匯匯率 · 市場情緒</p></div>
+      <button onclick="mktCache=null;renderMarket()" class="text-xs px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors font-bold">🔄 刷新</button>
+    </div>
+    <div id="mktBody" class="space-y-4">
+      <div class="flex items-center justify-center h-40 text-slate-400">
+        <div class="text-center"><p class="text-3xl mb-2">⏳</p><p class="text-sm">載入市場數據中…</p></div>
+      </div>
+    </div>
+  </div>`;
+
+  const data=await fetchMktData();
+  const mktBody=document.getElementById('mktBody'); if(!mktBody) return;
+
+  if(!data){
+    mktBody.innerHTML=`<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-xs text-red-700">⚠️ 無法連接 API（CoinGecko / Open Exchange Rates / Alternative.me）。請確認網路連線後點「刷新」。</div>`;
+    return;
+  }
+
+  const {crypto,fx,fg}=data;
+  const usdTwd=fx.rates?.TWD||32;
+  const jpyTwd=fx.rates?(fx.rates.TWD/fx.rates.JPY):null;
+  const eurUsd=fx.rates?(1/fx.rates.EUR):null;
+  const btc=crypto.bitcoin||{};
+  const eth=crypto.ethereum||{};
+  const sol=crypto.solana||{};
+  const fgVal=Number(fg.data?.[0]?.value)||50;
+  const fgLabel=fg.data?.[0]?.value_classification||'Neutral';
+  const fgIcon=fgVal<20?'😱':fgVal<40?'😨':fgVal<60?'😐':fgVal<80?'😊':'🤑';
+  const fgColor=fgVal<25?'red':fgVal<45?'orange':fgVal<55?'yellow':fgVal<75?'green':'emerald';
+
+  const chgCls=v=>v>0?'text-emerald-600 bg-emerald-50':v<0?'text-red-500 bg-red-50':'text-slate-400 bg-slate-50';
+  const chgStr=v=>v!=null?(v>0?'▲ +':'▼ ')+Math.abs(v).toFixed(2)+'%':'—';
+
+  const cryptoCards=[
+    {name:'Bitcoin',sym:'BTC',icon:'₿',twd:btc.twd,usd:btc.usd,chg:btc.twd_24h_change,iconBg:'bg-amber-50 text-amber-600'},
+    {name:'Ethereum',sym:'ETH',icon:'Ξ',twd:eth.twd,usd:eth.usd,chg:eth.twd_24h_change,iconBg:'bg-indigo-50 text-indigo-600'},
+    {name:'Solana',sym:'SOL',icon:'◎',twd:sol.twd,usd:sol.usd,chg:sol.twd_24h_change,iconBg:'bg-purple-50 text-purple-600'},
+  ].map(c=>`<div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 transition-shadow hover:shadow-sm">
+    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${c.iconBg} shrink-0">${c.icon}</div>
+    <div class="flex-1 min-w-0">
+      <p class="text-[10px] text-slate-400">${c.name} <span class="font-mono">${c.sym}</span></p>
+      <p class="text-sm font-bold tabular-nums text-slate-800">NT$${c.twd?Math.round(c.twd).toLocaleString():'—'}</p>
+      <p class="text-[10px] text-slate-400">US$${c.usd?c.usd.toLocaleString():'—'}</p>
+    </div>
+    <span class="text-xs font-bold px-2 py-1 rounded-lg tabular-nums ${chgCls(c.chg)}">${chgStr(c.chg)}</span>
+  </div>`).join('');
+
+  const fxCards=[
+    {label:'USD / TWD',val:usdTwd,prec:2},
+    {label:'JPY / TWD',val:jpyTwd,prec:4},
+    {label:'EUR / USD',val:eurUsd,prec:4},
+    {label:'CNY / TWD',val:fx.rates?(fx.rates.TWD/fx.rates.CNY):null,prec:2},
+  ].map(r=>`<div class="bg-white border border-slate-200 rounded-xl p-3">
+    <p class="text-[10px] text-slate-400 mb-1">${r.label}</p>
+    <p class="text-sm font-bold tabular-nums text-slate-700">${r.val?r.val.toFixed(r.prec):'—'}</p>
+  </div>`).join('');
+
+  mktBody.innerHTML=`
+    <div>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">加密貨幣 · 24h</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${cryptoCards}</div>
+    </div>
+    <div>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">外匯匯率（美元基準）</p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${fxCards}</div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs font-bold text-slate-600 mb-3">😨 加密貨幣恐懼貪婪指數</p>
+        <div class="flex items-center gap-4 mb-3">
+          <span class="text-4xl">${fgIcon}</span>
+          <div>
+            <p class="text-3xl font-bold tabular-nums text-${fgColor}-600">${fgVal}</p>
+            <p class="text-xs text-slate-500">${fgLabel}</p>
+          </div>
+          <div class="ml-auto text-[10px] text-slate-400 text-right leading-5">
+            <p>0 = 極度恐慌</p><p>50 = 中性</p><p>100 = 極度貪婪</p>
+          </div>
+        </div>
+        <div class="w-full h-3 rounded-full overflow-hidden bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 relative">
+          <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-slate-600 rounded-full shadow" style="left:calc(${fgVal}% - 6px)"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1"><span>恐慌</span><span>貪婪</span></div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <p class="text-xs font-bold text-slate-600 mb-3">📰 H2 2026 市場觀察</p>
+        <div class="space-y-2 text-xs">
+          <div class="flex gap-2 items-start"><span class="text-sm">🔵</span><span class="text-slate-500">Fed 降息週期中，美股成長股、科技股持續受惠</span></div>
+          <div class="flex gap-2 items-start"><span class="text-sm">🟡</span><span class="text-slate-500">台股 AI 供應鏈估值偏高，注意 Q3 財報季波動</span></div>
+          <div class="flex gap-2 items-start"><span class="text-sm">🟢</span><span class="text-slate-500">ETH 機構化加速（ETF 核准後），配置 5–7% 合理</span></div>
+          <div class="flex gap-2 items-start"><span class="text-sm">🔴</span><span class="text-slate-500">台海地緣風險持續存在，為台股最大尾部風險</span></div>
+          <div class="flex gap-2 items-start"><span class="text-sm">⚡</span><span class="text-slate-500">美元走弱趨勢下，持有 USD 資產需注意匯兌損失</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="text-[11px] text-slate-400 text-center">數據來源：CoinGecko · Open Exchange Rates · Alternative.me · 更新時間：${new Date().toLocaleTimeString('zh-TW')} ⚠️ 僅供參考，非投資建議</p>`;
+}
 // 鍵盤捷徑：按 / 聚焦代號輸入框（個股模式）
 document.addEventListener('keydown',e=>{
   if(e.key==='/'&&!/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||'')){
