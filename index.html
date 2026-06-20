@@ -52,6 +52,13 @@ button:not(:disabled):active{transform:scale(.97)}
           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-blue-500">
         <p class="text-xs text-slate-600 mt-1">台股加 .TW（如 2330.TW），美股直接輸入（如 NVDA）</p>
       </div>
+      <div>
+        <p class="text-xs text-slate-400 mb-1">🎯 本次分析目標</p>
+        <textarea id="goalInp" rows="2" placeholder="例：確認 2330 是否適合長抱至 2028…"
+          onchange="localStorage.setItem('kaku_goal',this.value)"
+          class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500 resize-none placeholder-slate-600"></textarea>
+        <p class="text-[10px] text-slate-700 mt-0.5">→ 先寫再分析，結果出來後對照</p>
+      </div>
       <button onclick="run()" id="runBtn"
         class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 text-white text-sm font-bold py-2.5 rounded-lg transition-colors">
         🔍 啟動分析
@@ -717,14 +724,16 @@ function fmtDate(s){ return s?s.slice(5):''; }                       // YYYY-MM-
 // 📊 即時數據 = FinMind 客觀數字（附資料日期）
 // 🤖 AI 生成  = Claude API 生成（目前停用，預留）
 function srcBadge(type, date){
+  // 對應截圖中的認知框架：KNOWN=HIGH, COMPUTED=HIGH, INFERRED=MED, FRAME=LOW
   const cfg={
-    framework:{icon:'🧠',label:'框架判斷',bg:'bg-blue-100',tc:'text-blue-700'},
-    data:{icon:'📊',label:'即時數據',bg:'bg-sky-100',tc:'text-sky-700'},
-    ai:{icon:'🤖',label:'AI 生成',bg:'bg-purple-100',tc:'text-purple-700'}
+    framework:{icon:'🧠',label:'框架推論',bg:'bg-blue-100',tc:'text-blue-700',conf:'MED'},
+    data:{icon:'📊',label:'即時數據',bg:'bg-sky-100',tc:'text-sky-700',conf:'HIGH'},
+    ai:{icon:'🤖',label:'AI 生成',bg:'bg-purple-100',tc:'text-purple-700',conf:'MED'}
   };
   const c=cfg[type]||cfg.framework;
   const ds=date?` · ${fmtDate(date)}`:'';
-  return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.bg} ${c.tc} ml-1 inline-flex items-center gap-0.5 shrink-0">${c.icon} ${c.label}${ds}</span>`;
+  const confCls=c.conf==='HIGH'?'text-emerald-600':c.conf==='MED'?'text-amber-600':'text-slate-400';
+  return `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${c.bg} ${c.tc} ml-1 inline-flex items-center gap-1 shrink-0">${c.icon} ${c.label}<span class="${confCls} font-mono text-[9px]">[${c.conf}]${ds}</span></span>`;
 }
 function dataBadge(date){ return srcBadge('data', date); }
 function staticBadge(src){ return srcBadge(src==='ai'?'ai':'framework'); }
@@ -1075,11 +1084,13 @@ function renderResults(ticker,d){
 
   // 資料新鮮度橫幅
   const fresh=document.getElementById('freshBar');
+  const userGoal=(localStorage.getItem('kaku_goal')||'').trim();
+  const goalBanner=userGoal?`<span class="ml-auto flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-[10px] font-bold max-w-xs truncate" title="${userGoal}">🎯 ${userGoal}</span>`:'';
   if(r){
     const usLag = r.isTW?'':' · 美股約延遲 1 交易日';
-    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>資料截至 <b class="text-slate-700">${r.asOf||'—'}</b>（日收盤，非盤中即時${usLag}）</span><span class="ml-auto text-slate-400">來源：FinMind</span>`;
+    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>資料截至 <b class="text-slate-700">${r.asOf||'—'}</b>（日收盤，非盤中即時${usLag}）</span><span class="text-slate-400">來源：FinMind</span>${goalBanner}`;
   } else {
-    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span><span class="text-amber-600">即時數據抓取失敗，以下為策展靜態觀點（數字可能過時）</span>`;
+    fresh.innerHTML=`<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span><span class="text-amber-600">即時數據抓取失敗，以下為策展靜態觀點（數字可能過時）</span>${goalBanner}`;
   }
   fresh.classList.remove('hidden');
 
@@ -1416,6 +1427,8 @@ function uiRestore(){
   try{
     const u=JSON.parse(localStorage.getItem(UI_KEY)||'{}');
     if(u.ticker) document.getElementById('inp').value=u.ticker;
+    const savedGoal=localStorage.getItem('kaku_goal')||'';
+    const goalEl=document.getElementById('goalInp'); if(goalEl) goalEl.value=savedGoal;
     if(u.mode&&u.mode!=='stock') setMode(u.mode);
   }catch(e){}
 }
@@ -2017,6 +2030,7 @@ function renderNetworth(){
         <p class="text-[10px] text-slate-400 uppercase tracking-wide">${ym} 淨資產</p>
         <p id="nw_total" class="text-2xl font-bold text-blue-700 tabular-nums">NT$${Math.round(nw).toLocaleString()}</p>
         ${momChange!==null?'<p class="text-xs '+(momChange>=0?'text-emerald-600':'text-red-500')+' tabular-nums font-bold">'+(momChange>=0?'▲':'▼')+' NT$'+Math.abs(Math.round(momChange)).toLocaleString()+' MoM '+(momPct!==null?'('+(momPct>=0?'+':'')+momPct.toFixed(1)+'%)':'')+'</p>':''}
+        ${(()=>{const fields=['cash','bank','twStock','usStock','crypto','realEstate','other','debt'];const filled=fields.filter(f=>snap[f]&&Number(snap[f])>0).length;const pctFill=Math.round(filled/fields.length*100);const cls=pctFill>=75?'text-emerald-600':pctFill>=50?'text-amber-600':'text-red-500';return '<p class="text-[10px] mt-1 '+cls+' font-bold">📋 快照完整度 '+filled+'/'+fields.length+' ('+pctFill+'%)</p>';})()}
       </div>
     </div>
 
