@@ -1,0 +1,6 @@
+name = "financial-dashboard-proxy"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# 部署後的 URL 會是：
+# https://financial-dashboard-proxy.YOUR_SUBDOMAIN.workers.dev
