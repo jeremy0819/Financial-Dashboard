@@ -85,7 +85,7 @@ html.dark .bg-rose-50{background-color:#3a1a1a!important}
       <div>
         <p class="text-xs text-slate-400 mb-1">🎯 本次分析目標</p>
         <textarea id="goalInp" rows="2" placeholder="例：確認 2330 是否適合長抱至 2028…"
-          onchange="localStorage.setItem('kaku_goal',this.value)"
+          onchange="goalSave(this.value)"
           class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-blue-500 resize-none placeholder-slate-600"></textarea>
         <p class="text-[10px] text-slate-700 mt-0.5">→ 先寫再分析，結果出來後對照</p>
       </div>
@@ -1140,7 +1140,7 @@ function renderResults(ticker,d){
 
   // 資料新鮮度橫幅
   const fresh=document.getElementById('freshBar');
-  const userGoal=(localStorage.getItem('kaku_goal')||'').trim();
+  const userGoal=(localStorage.getItem(GOAL_KEY)||'').trim();
   const goalBanner=userGoal?`<span class="ml-auto flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 text-[10px] font-bold max-w-xs truncate" title="${userGoal}">🎯 ${userGoal}</span>`:'';
   if(r){
     const usLag = r.isTW?'':' · 美股約延遲 1 交易日';
@@ -1430,6 +1430,8 @@ function finish(ticker,data){
 // ═══ 個人資產分析（核心-衛星雙軌制）═══════════════════════════
 // 持股只存在本機 localStorage，不上傳；程式碼僅內建框架範本（股數成本留 0）
 const PF_KEY='kaku_portfolio_v1';
+const DARK_KEY='kaku_dark';
+const GOAL_KEY='kaku_goal';
 const TRACKS={ core:{label:'核心倉',color:'#10b981',min:70,max:80}, satellite:{label:'衛星倉',color:'#f59e0b',min:20,max:30}, defense:{label:'防禦現金',color:'#3b82f6',min:15,max:100} };
 const KAKU_TEMPLATE={ holdings:[
   {ticker:'2330.TW',name:'台積電',track:'core',shares:0,cost:0},
@@ -1479,12 +1481,13 @@ function pfSetCash(v){ PF.cash=Number(v)||0; pfSave(); pfRecompute(); }
 // ─── UI 狀態記憶（最後模式 + 最後代號，僅存本機）─────────
 const UI_KEY='kaku_ui_v1';
 function uiSave(){ try{ localStorage.setItem(UI_KEY,JSON.stringify({mode:appMode,ticker:document.getElementById('inp').value})); }catch(e){} }
+function goalSave(v){ try{ localStorage.setItem(GOAL_KEY,v); }catch(e){ toast('儲存空間不足，目標設定未存入','warn'); } }
 function uiRestore(){
   try{
-    if(localStorage.getItem('kaku_dark')==='1') document.documentElement.classList.add('dark');
+    if(localStorage.getItem(DARK_KEY)==='1') document.documentElement.classList.add('dark');
     const u=JSON.parse(localStorage.getItem(UI_KEY)||'{}');
     if(u.ticker) document.getElementById('inp').value=u.ticker;
-    const savedGoal=localStorage.getItem('kaku_goal')||'';
+    const savedGoal=localStorage.getItem(GOAL_KEY)||'';
     const goalEl=document.getElementById('goalInp'); if(goalEl) goalEl.value=savedGoal;
     if(u.mode&&u.mode!=='stock') setMode(u.mode);
   }catch(e){}
@@ -2020,7 +2023,7 @@ function calcTD(){
 // ─── 暗黑模式 ─────────────────────────────────────────────
 function toggleDark(){
   const isDark=document.documentElement.classList.toggle('dark');
-  localStorage.setItem('kaku_dark',isDark?'1':'0');
+  try{ localStorage.setItem(DARK_KEY,isDark?'1':'0'); }catch(e){}
   toast(isDark?'🌙 暗黑模式已開啟':'☀️ 已切換回亮色模式','info');
 }
 
@@ -2029,6 +2032,8 @@ let cmpChart1=null,cmpChart2=null;
 
 function renderComparePanel(){
   const panel=document.getElementById('comparePanel');
+  const saved=JSON.parse(localStorage.getItem(UI_KEY)||'{}');
+  const defA=saved.cmpA||'2330.TW', defB=saved.cmpB||'NVDA';
   panel.innerHTML=`<div class="max-w-5xl mx-auto space-y-4 fade-in">
     <div>
       <p class="text-lg font-bold text-slate-700">⚖️ 比較分析</p>
@@ -2038,10 +2043,10 @@ function renderComparePanel(){
       <p class="text-xs font-bold text-slate-600 mb-3">輸入兩個股票代號</p>
       <div class="flex gap-2 flex-wrap items-end">
         <div><label class="text-[10px] text-slate-400 block mb-1">標的 A</label>
-          <input id="cmpA" value="2330.TW" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 w-36"></div>
+          <input id="cmpA" value="${defA}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 w-36"></div>
         <span class="text-slate-400 font-bold text-lg pb-2">vs</span>
         <div><label class="text-[10px] text-slate-400 block mb-1">標的 B</label>
-          <input id="cmpB" value="NVDA" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 w-36"></div>
+          <input id="cmpB" value="${defB}" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 w-36"></div>
         <button onclick="runCompare()" id="cmpRunBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors">🔍 開始比較</button>
       </div>
     </div>
@@ -2057,6 +2062,7 @@ async function runCompare(){
   if(!tA||!tB){ toast('請輸入兩個代號','warn'); if(btn){btn.disabled=false;btn.textContent='🔍 開始比較';} return; }
   if(/^\d{4,6}$/.test(tA)) tA+='.TW';
   if(/^\d{4,6}$/.test(tB)) tB+='.TW';
+  try{ const u=JSON.parse(localStorage.getItem(UI_KEY)||'{}'); u.cmpA=tA; u.cmpB=tB; localStorage.setItem(UI_KEY,JSON.stringify(u)); }catch(e){}
   document.getElementById('cmpResult').innerHTML='<p class="text-slate-400 text-sm text-center py-12">⏳ 同時抓取兩檔數據中...</p>';
   const [r1,r2]=await Promise.all([cmpFetch(tA),cmpFetch(tB)]);
   if(btn){ btn.disabled=false; btn.textContent='🔍 開始比較'; }
@@ -2246,6 +2252,11 @@ function exportPDF(){
 
 pfLoad(); // 啟動載入本機組合
 uiRestore(); // 還原上次使用的模式與代號
+
+// ─── 離線偵測 ─────────────────────────────────────────────
+window.addEventListener('offline',()=>toast('📡 網路已斷線，精選股票仍可使用 DB 離線模式','warn'));
+window.addEventListener('online',()=>toast('✅ 網路已恢復','success'));
+if(!navigator.onLine) toast('📡 目前離線，精選股票可使用 DB 離線模式，即時報價暫不可用','warn');
 
 // ═══════════════════════════════════════════════════════════
 // v8.0 新增模組：淨資產追蹤 + 市場快報
@@ -2463,13 +2474,19 @@ function renderNetworth(){
 // ─── 市場快報 ─────────────────────────────────────────────
 let mktCache=null, mktCacheTs=0, mktTimerId=null;
 
+function mktFetch(url){
+  const ctrl=new AbortController();
+  setTimeout(()=>ctrl.abort(),10000);
+  return fetch(url,{signal:ctrl.signal}).then(r=>r.json());
+}
+
 async function fetchMktData(){
   if(mktCache&&Date.now()-mktCacheTs<60000) return mktCache;
   try{
     const [crypto,fx,fg]=await Promise.all([
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=twd,usd&include_24hr_change=true').then(r=>r.json()),
-      fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()),
-      fetch('https://api.alternative.me/fng/').then(r=>r.json())
+      mktFetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=twd,usd&include_24hr_change=true'),
+      mktFetch('https://open.er-api.com/v6/latest/USD'),
+      mktFetch('https://api.alternative.me/fng/')
     ]);
     mktCache={crypto,fx,fg}; mktCacheTs=Date.now();
     return mktCache;
