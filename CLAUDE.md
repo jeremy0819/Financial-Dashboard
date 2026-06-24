@@ -2,9 +2,9 @@
 
 ## 這是什麼專案
 
-單一 `index.html` 靜態網頁，部署在 GitHub Pages。  
+GitHub Pages 靜態網站，個人自用投資工具。  
 輸入台股/美股代號 → 抓 FinMind 日收盤 → 六層次分析報告 + 個人資產分析 + 投資計算器。  
-目前版本：**v6.0**
+目前版本：**v9.0**
 
 Live URL: https://jeremy0819.github.io/Financial-Dashboard/
 
@@ -13,36 +13,45 @@ Live URL: https://jeremy0819.github.io/Financial-Dashboard/
 ## 檔案架構
 
 ```
-index.html              主體（HTML + Tailwind CSS + Vanilla JS，約 1,500 行）
+index.html              殼（HTML + CSS + DB + 全域常數，624 行）
+src/
+  core.js               核心工具函式（fmGet, toast, setMode, uiSave/Restore 等）
+  analysis.js           六層次分析（tabHealth/Valuation/Growth/Debate/Decision/Scenario）
+  portfolio.js          個人資產（renderPortfolio, pfCompute, P&L, 沉沒基金, 決策紀錄）
+  alerts.js             價格警報（getAlerts, checkAlerts, renderAlerts）
+  market.js             市場快報（fetchMktData, renderMarket）
+  networth.js           淨資產追蹤（renderNetworth, nwDrawPie, nwDrawLine）
+  calculator.js         投資計算器（renderCalc）
+  compare.js            比較分析（renderComparePanel, runCompare, displayCompare）
 scripts/
   stock-db.js           精選股票資料庫（6 支：TSMC/MediaTek/Fubon/Delta/NVDA/TSLA）
-  validate.sh           快速語法 + 結構驗證腳本
+  validate.sh           語法 + 結構驗證（支援 index.html + src/*.js）
   sync-db.sh            把 stock-db.js 同步回 index.html
-  update-stock.sh       一鍵同步 + 驗證 + commit + push（完整工作流）
+  update-stock.sh       一鍵同步 + 驗證 + commit + push
   wire-proxy.sh         把 Cloudflare Worker URL 寫進 index.html 的 PROXY_URL
 worker/
   index.js              Cloudflare Worker（Anthropic API 代理，隱藏 API Key）
   wrangler.toml         Worker 部署設定
   DEPLOY.md             Worker 部署逐步說明
-README.md               專案說明（使用者閱讀）
 .claude/
   settings.json         專案層級 Claude Code 設定（hooks + 權限白名單）
   hooks/
-    post-edit.sh        PostToolUse hook：Edit/Write index.html 後自動驗證 JS
+    post-edit.sh        PostToolUse hook：Edit/Write index.html 或 src/*.js 後自動驗證 JS
 ```
 
-> ⚠️ `.claude/settings.json` 引用了 `pre-bash.sh`（PreToolUse for Bash），但該檔案**尚未建立**，hook 會靜默失敗。若需要 Bash 前置檢查，需新建 `.claude/hooks/pre-bash.sh`。
+> ⚠️ `.claude/settings.json` 引用了 `pre-bash.sh`（PreToolUse for Bash），但該檔案**尚未建立**，hook 會靜默失敗。
 
 ---
 
-## 重要架構決策（不要打破）
+## 重要架構決策
 
 | 決策 | 原因 |
 |---|---|
 | 無框架、無 build | GitHub Pages 純靜態，零設定部署 |
-| 所有邏輯在一支 HTML | 使用者只需複製單一檔案即可自架 |
-| FinMind API（免金鑰） | 避免使用者被迫申請 key |
+| **個人自用**，不守「單一 HTML 可攜帶」承諾 | v9.0 模組化後，index.html + src/ 多檔部署 |
+| FinMind API（免金鑰） | 避免申請 key 的摩擦 |
 | `const PROXY_URL` 集中管理 API 端點 | `null` = 純 DB 模式；設定後自動切換為 Worker 代理 |
+| **src/*.js 全域載入** | 無 import/export，函式互呼不需 module scope |
 
 ---
 
