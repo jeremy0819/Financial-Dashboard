@@ -300,15 +300,6 @@ html.dark .bg-rose-50{background-color:#3a1a1a!important}
 </main>
 
 <script>
-// ─── CLOCK ───────────────────────────────────────────────
-function pad(n){return String(n).padStart(2,'0')}
-function tick(){
-  const d=new Date();
-  document.getElementById('cDate').textContent=`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}`;
-  document.getElementById('cTime').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-setInterval(tick,1000); tick();
-
 // ─── CONFIG ──────────────────────────────────────────────
 const FM='https://api.finmindtrade.com/api/v4/data';
 const MODEL='claude-sonnet-4-20250514';
