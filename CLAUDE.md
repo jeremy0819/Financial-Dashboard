@@ -18,6 +18,7 @@ src/
   core.js               核心工具函式（fmGet, toast, setMode, uiSave/Restore 等）
   analysis.js           六層次分析（tabHealth/Valuation/Growth/Debate/Decision/Scenario）
   portfolio.js          個人資產（renderPortfolio, pfCompute, P&L, 沉沒基金, 決策紀錄）
+  frameworks.js         機構級分析框架引擎（THRESHOLDS, fwTechnical/Risk/Diversification/Value/GrowthDividend/Sentiment, runInstitutional）
   alerts.js             價格警報（getAlerts, checkAlerts, renderAlerts）
   market.js             市場快報（fetchMktData, renderMarket）
   networth.js           淨資產追蹤（renderNetworth, nwDrawPie, nwDrawLine）
@@ -86,6 +87,27 @@ calc       🧮 投資計算器  複利/定期定額/72法則/台灣定存四種
 - **FinMind API**：`https://api.finmindtrade.com/api/v4/data`，CORS 開放，免金鑰
 - 台股代號格式：`2330.TW`（上市）、`6669.TWO`（上櫃）
 - 美股直接用代號：`NVDA`、`TSLA`
+- 機構健診用 dataset：`TaiwanStockPrice`（200日收盤→MA/RSI）、`TaiwanStockPER`（PE/PB/殖利率）
+
+---
+
+## 機構級分析框架（src/frameworks.js）
+
+依「機構級投資分析框架 v1.0」規格實作的規則引擎，UI 在個人資產 →「🏛️ 機構健診」分頁。
+
+| 框架 | 自動化程度 | 資料源 |
+|---|---|---|
+| F2 多元化 | ✅ 全自動 | pfCompute（產業/因子/防禦層集中度）|
+| F3 風控 | ✅ 全自動 | 月線停損 + 部位上限 + 停損紀律 |
+| F4 技術 | ✅ 全自動 | 200日收盤 → MA20/60/120 + RSI14 |
+| F6 價值六步驟 | ⚠️ 僅 Step4 | TaiwanStockPER；Step0-3 需財報/AI |
+| F7 情緒 | ⚠️ proxy | 持股平均 60 日乖離 + 加密 F&G 參考 |
+| F9 成長股息 | ✅ 全自動 | 殖利率分類 + 配比失衡偵測 |
+| F1/F5/F8/F10 | ❌ 需 AI/人工 | 無免費結構化資料源，UI 中明確標注 |
+
+- **閾值全部集中在 `THRESHOLDS` 物件**（frameworks.js 頂部），調校只改那裡
+- 每個 Signal 掛 `timestamp` + `data_date` + `source_tag`（framework/data/ai）
+- 抓資料 3 檔一批，避免 FinMind 免費版 429
 
 ---
 

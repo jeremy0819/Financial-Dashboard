@@ -158,8 +158,8 @@ function renderPortfolio(){
   const c=pfCompute(), g=c.gross||1;
   const priced=c.rows.some(r=>r.value!=null);
   const pfTab=typeof pfActiveTab!=='undefined'?pfActiveTab:'holdings';
-  const tabNav=['holdings','stoploss','mkttemp','monthly','sinking','decisions'].map((k,i)=>{
-    const labels=['📊 持股管理','🛑 衛星停損','🌡️ 市場溫度','📅 月度報表','🏦 沉沒基金','📈 決策追蹤'];
+  const tabNav=['holdings','inst','stoploss','mkttemp','monthly','sinking','decisions'].map((k,i)=>{
+    const labels=['📊 持股管理','🏛️ 機構健診','🛑 衛星停損','🌡️ 市場溫度','📅 月度報表','🏦 沉沒基金','📈 決策追蹤'];
     const active=pfTab===k;
     return `<button onclick="pfSwitchTab('${k}')" class="px-3 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${active?'border-blue-600 text-blue-700':'border-transparent text-slate-400 hover:text-slate-600'}">${labels[i]}</button>`;
   }).join('');
@@ -207,6 +207,8 @@ function renderPortfolio(){
       <div id="pfAdviceBox">${pfAdviceHTML(c)}</div>`)}
     ${pfRiskHeatmap(c,g)}
     ${card(renderAlerts())}`;
+  } else if(pfTab==='inst'){
+    pfMainContent=renderInstitutional();
   } else if(pfTab==='stoploss'){
     pfMainContent=renderSatStopLoss(c);
   } else if(pfTab==='mkttemp'){
